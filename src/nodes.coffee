@@ -695,22 +695,23 @@ exports.Block = class Block extends Base
     post = @compileNode o
     {scope} = o
     if scope.expressions is this
-      declars = o.scope.hasDeclarations()
-      assigns = scope.hasAssignments
-      if declars or assigns
+      if o.scope.hasDeclarations()
         fragments.push @makeCode '\n' if i
         fragments.push @makeCode "#{@tab}var "
-        if declars
-          declaredVariables = scope.declaredVariables()
-          for declaredVariable, declaredVariablesIndex in declaredVariables
-            fragments.push @makeCode declaredVariable
-            if Object::hasOwnProperty.call o.scope.comments, declaredVariable
-              fragments.push o.scope.comments[declaredVariable]...
-            if declaredVariablesIndex isnt declaredVariables.length - 1
-              fragments.push @makeCode ', '
-        if assigns
-          fragments.push @makeCode ",\n#{@tab + TAB}" if declars
-          fragments.push @makeCode scope.assignedVariables().join(",\n#{@tab + TAB}")
+        unassigned = scope.declaredVariables false
+        assigned = scope.declaredVariables true
+        declare = (names, sep) =>
+          for name, i in names
+            v = scope.get name
+            fragments.push @makeCode v.name
+            fragments.push v.comments... if v.comments?
+            fragments.push @makeCode ": #{v.explicitType}" if v.explicitType?
+            fragments.push @makeCode " = #{v.assigned}" if v.assigned?
+            fragments.push @makeCode sep unless i == names.length-1
+        declare unassigned, ', '
+        if assigned.length
+          fragments.push @makeCode ",\n#{@tab + TAB}" if unassigned.length
+          declare assigned, ",\n#{@tab + TAB}"
         fragments.push @makeCode ";\n#{if @spaced then '\n' else ''}"
       else if fragments.length and post.length
         fragments.push @makeCode "\n"
@@ -3523,14 +3524,14 @@ exports.Assign = class Assign extends Base
         # with Flow typing. Don’t do this if this assignment is for a
         # class, e.g. `ClassName = class ClassName {`, as Flow requires
         # the comment to be between the class name and the `{`.
-        if name.comments and not o.scope.comments[name.value] and
+        if name.comments and not o.scope.hasComment(name.value) and
            @value not instanceof Class and
            name.comments.every((comment) -> comment.here and not comment.multiline)
           commentsNode = new IdentifierLiteral name.value
           commentsNode.comments = name.comments
           commentFragments = []
           @compileCommentFragments o, commentsNode, commentFragments
-          o.scope.comments[name.value] = commentFragments
+          o.scope.comment name.value, commentFragments
 
   # Compile an assignment, delegating to `compileDestructuring` or
   # `compileSplice` if appropriate. Keep track of the name of the base object
@@ -4082,8 +4083,8 @@ exports.Code = class Code extends Base
       scopeVariablesCount = o.scope.variables.length
       signature.push param.compileToFragments(o, LEVEL_PAREN)...
       if scopeVariablesCount isnt o.scope.variables.length
-        generatedVariables = o.scope.variables.splice scopeVariablesCount
-        o.scope.parent.variables.push generatedVariables...
+        generatedVariables = o.scope.spliceVariables scopeVariablesCount
+        o.scope.parent.addVariables generatedVariables
     signature.push @makeCode ')'
     # Block comments between `)` and `->`/`=>` get output between `)` and `{`.
     if @funcGlyph?.comments?

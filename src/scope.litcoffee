@@ -1,3 +1,5 @@
+    {throwSyntaxError} = require './helpers'
+
 The **Scope** class regulates lexical scoping within CoffeeScript. As you
 generate code, you create a tree of scopes in the same shape as the nested
 function bodies. Each scope knows about the variables declared within it,
@@ -11,12 +13,12 @@ Initialize a scope with its parent, for lookups up the chain,
 as well as a reference to the **Block** node it belongs to, which is
 where it should declare its variables, a reference to the function that
 it belongs to, and a list of variables referenced in the source code
-and therefore should be avoided when generating variables. Also track comments
-that should be output as part of variable declarations.
+and therefore should be avoided when generating variables.
+Also track explicit type declarations and comments that should be output
+as part of variable declarations.
 
       constructor: (@parent, @expressions, @method, @referencedVars) ->
         @variables = [{name: 'arguments', type: 'arguments'}]
-        @comments  = {}
         @positions = {}
         @utilities = {} unless @parent
 
@@ -55,14 +57,14 @@ Reserve a variable name as originating from a function parameter for this
 scope. No `var` required for internal references.
 
       parameter: (name) ->
-        return if @shared and @parent.check name, yes
-        @add name, 'param'
+        return if @shared and @parent.check name
+        @add name, 'param', true
 
 Just check to see if a variable has already been declared, without reserving,
 walks up to the root scope.
 
       check: (name) ->
-        !!(@type(name) or @parent?.check(name))
+        @get(name)? or @parent?.check(name)
 
 Generate a temporary variable name at the given index.
 
@@ -78,11 +80,17 @@ Generate a temporary variable name at the given index.
         else
           "#{name}#{index or ''}"
 
-Gets the type of a variable.
+Gets a variable and its associated data from this scope (not ancesotrs),
+or `undefined` if it doesn't exist,
+
+      get: (name) ->
+        @variables[@positions[name]] if Object::hasOwnProperty.call @positions, name
+
+Gets the type of a variable declared in this scope,
+or `undefined` if it doesn't exist.
 
       type: (name) ->
-        return v.type for v in @variables when v.name is name
-        null
+        @get(name)?.type
 
 If we need to store an intermediate result, find an available name for a
 compiler-generated variable. `_var`, `_var2`, and so on...
@@ -96,25 +104,55 @@ compiler-generated variable. `_var`, `_var2`, and so on...
         @add temp, 'var', yes if options.reserve ? true
         temp
 
-Ensure that an assignment is made at the top of this scope
-(or at the top-level scope, if requested).
+Ensure that an assignment is made at the top of this scope.
 
       assign: (name, value) ->
-        @add name, {value, assigned: yes}, yes
-        @hasAssignments = yes
+        @get(name).assigned = value
+
+Add a comment that should appear when the variable is declared
+(for Flow support).
+
+      comment: (name, comments) ->
+        @get(name).comments = comments
+
+Does this scope have a comment attached to it?
+
+      hasComment: (name) ->
+        @get(name)?.comments?
+
+Add an explicit type for the variable declaration
+(for TypeScript/Flow support).
+
+      explicitType: (name, explicitType) ->
+        v = @get name
+        return unless v?
+        if v.explicitType?
+          throwSyntaxError "Variable #{name} assigned multiple explicit types: #{v.explicitType} and #{explicitType}"
+        v.explicitType = explicitType
 
 Does this scope have any declared variables?
 
       hasDeclarations: ->
-        !!@declaredVariables().length
+        return true for v in @variables when v.type is 'var'
 
-Return the list of variables first declared in this scope.
+Return a list of names of variables declared in this scope.
+Optionally restrict to assigned or unassigned variables.
 
-      declaredVariables: ->
-        (v.name for v in @variables when v.type is 'var').sort()
+      declaredVariables: (assigned) ->
+        (v.name for v in @variables when v.type is 'var' and
+          switch assigned
+            when true then v.assigned?
+            when false then not v.assigned?
+            else true
+        ).sort()
 
-Return the list of assignments that are supposed to be made at the top
-of this scope.
+Extract all variables from `start` onward.
 
-      assignedVariables: ->
-        "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
+      spliceVariables: (start) ->
+        delete @positions[@variables[i]] for i in [start...@variables.length]
+        @variables.splice start
+
+Add variables to this scope, e.g. as returned from `spliceVariables`.
+
+      addVariables: (vars) ->
+        @positions[v.name] = @variables.push(v) - 1 for v in vars
