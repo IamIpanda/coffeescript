@@ -820,7 +820,7 @@ IMPLICIT_CALL    = [
   '@', '->', '=>', '[', '(', '{', '--', '++'
 ]
 
-IMPLICIT_UNSPACED_CALL = ['+', '-']
+IMPLICIT_UNSPACED_CALL = ['+', '-', '~']
 
 # Tokens that always mark the end of an implicit call for single-liners.
 IMPLICIT_END     = ['POST_IF', 'FOR', 'WHILE', 'UNTIL', 'WHEN', 'BY',
@@ -854,6 +854,6 @@ DISCARDED = ['(', ')', '[', ']', '{', '}', ':', '.', '..', '...', ',', '=', '++'
 ].concat IMPLICIT_UNSPACED_CALL.concat IMPLICIT_END.concat CALL_CLOSERS.concat CONTROL_IN_IMPLICIT
 
 # Tokens that, when appearing at the end of a line, suppress a following TERMINATOR/INDENT token
-exports.UNFINISHED = UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-',
+exports.UNFINISHED = UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-', '~',
            '**', 'SHIFT', 'RELATION', 'COMPARE', '&', '^', '|', '&&', '||',
            'BIN?', 'EXTENDS']

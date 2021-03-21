@@ -385,9 +385,19 @@ grammar =
     o '... Expression',                         -> new Splat $2, {postfix: no}
   ]
 
+  TypedIdentifier: [
+    o 'Identifier'
+    o 'Identifier ~ ExplicitType',              -> new ExplicitType $1, $3
+    o 'Identifier EXPLICIT_TYPE ExplicitType',  -> new ExplicitType $1, $3
+  ]
+
+  ExplicitType: [
+    o 'Identifier'
+  ]
+
   # Variables and properties that can be assigned to.
   SimpleAssignable: [
-    o 'Identifier',                             -> new Value $1
+    o 'TypedIdentifier',                        -> new Value $1
     o 'Value Accessor',                         -> $1.add $2
     o 'Code Accessor',                          -> new Value($1).add $2
     o 'ThisProperty'
@@ -886,6 +896,7 @@ grammar =
     o 'UNARY Expression',                       -> new Op $1.toString(), $2, undefined, undefined, originalOperator: $1.original
     o 'DO Expression',                          -> new Op $1, $2
     o 'UNARY_MATH Expression',                  -> new Op $1, $2
+    o '~     Expression',                      (-> new Op '~', $2), prec: 'UNARY_MATH'
     o '-     Expression',                      (-> new Op '-', $2), prec: 'UNARY_MATH'
     o '+     Expression',                      (-> new Op '+', $2), prec: 'UNARY_MATH'
 
@@ -948,6 +959,7 @@ operators = [
   ['right',     'AWAIT']
   ['right',     '**']
   ['right',     'UNARY_MATH']
+  ['right',     '~', 'EXPLICIT_TYPE']
   ['left',      'MATH']
   ['left',      '+', '-']
   ['left',      'SHIFT']

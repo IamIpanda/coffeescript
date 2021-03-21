@@ -805,6 +805,7 @@ exports.Lexer = class Lexer
     else if value in UNARY           then tag = 'UNARY'
     else if value in UNARY_MATH      then tag = 'UNARY_MATH'
     else if value in SHIFT           then tag = 'SHIFT'
+    else if value in EXPLICIT_TYPE   then tag = 'EXPLICIT_TYPE'
     else if value is '?' and prev?.spaced then tag = 'BIN?'
     else if prev
       if value is '(' and not prev.spaced and prev[0] in CALLABLE
@@ -1274,7 +1275,7 @@ BOM = 65279
 IDENTIFIER = /// ^
   (?!\d)
   ( (?: (?!\s)[$\w\x7f-\uffff] )+ )
-  ( [^\n\S]* : (?!:) )?  # Is this a property name?
+  ( [^\n\S]* : (?![:=]) )?  # Is this a property name?
 ///
 
 # Like `IDENTIFIER`, but includes `-`s
@@ -1319,7 +1320,7 @@ NUMBER     = ///
 
 OPERATOR   = /// ^ (
   ?: [-=]>             # function
-   | [-+*/%<>&|^!?=]=  # compound assign / compare
+   | [-+*/%<>&|^!?=:]= # compound assign / compare
    | >>>=?             # zero-fill right shift
    | ([-+:])\1         # doubles
    | ([&|<>*/%])\2=?   # logic / shift / power / floor division / modulo
@@ -1429,7 +1430,10 @@ COMPOUND_ASSIGN = [
 # Unary tokens.
 UNARY = ['NEW', 'TYPEOF', 'DELETE']
 
-UNARY_MATH = ['!', '~']
+UNARY_MATH = ['!']  # '~', '-', '+' also sometimes act as UNARY_MATH
+
+# Explicit typing.
+EXPLICIT_TYPE = [':=']
 
 # Bit-shifting tokens.
 SHIFT = ['<<', '>>', '>>>']

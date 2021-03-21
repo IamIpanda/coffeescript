@@ -705,7 +705,7 @@ exports.Block = class Block extends Base
             v = scope.get name
             fragments.push @makeCode v.name
             fragments.push v.comments... if v.comments?
-            fragments.push @makeCode ": #{v.explicitType}" if v.explicitType?
+            fragments.push @makeCode(": "), v.explicitType... if v.explicitType?
             fragments.push @makeCode " = #{v.assigned}" if v.assigned?
             fragments.push @makeCode sep unless i == names.length-1
         declare unassigned, ', '
@@ -1594,6 +1594,26 @@ exports.MetaProperty = class MetaProperty extends Base
     return
       meta: @meta.ast o, LEVEL_ACCESS
       property: @property.ast o
+
+exports.ExplicitType = class ExplicitType extends Base
+  constructor: (@identifier, @explicitType) ->
+    super()
+
+  children: ['identifier', 'explicitType']
+
+  compileNode: (o) ->
+    name = @identifier.value
+    message = isUnassignable name
+    @identifier.error message if message
+    Assign::checkNameAssignability o, name
+    o.scope.add name, 'var'
+    if (oldType = o.scope.getExplicitType name)?
+      @explicitType.error "Variable #{name} assigned multiple explicit types: previously #{fragmentsToText oldType} at #{locationDataToString oldType[0].locationData}"
+    o.scope.explicitType name, @explicitType.compileNode o
+    @identifier.compileNode o
+
+  assigns: (name) ->
+    name == @identifier.value
 
 #### HereComment
 

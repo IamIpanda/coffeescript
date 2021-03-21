@@ -1,5 +1,3 @@
-    {throwSyntaxError} = require './helpers'
-
 The **Scope** class regulates lexical scoping within CoffeeScript. As you
 generate code, you create a tree of scopes in the same shape as the nested
 function bodies. Each scope knows about the variables declared within it,
@@ -115,7 +113,7 @@ Add a comment that should appear when the variable is declared
       comment: (name, comments) ->
         @get(name).comments = comments
 
-Does this scope have a comment attached to it?
+Does this variable have a comment attached to it in this scope?
 
       hasComment: (name) ->
         @get(name)?.comments?
@@ -125,10 +123,12 @@ Add an explicit type for the variable declaration
 
       explicitType: (name, explicitType) ->
         v = @get name
-        return unless v?
-        if v.explicitType?
-          throwSyntaxError "Variable #{name} assigned multiple explicit types: #{v.explicitType} and #{explicitType}"
-        v.explicitType = explicitType
+        v?.explicitType = explicitType
+
+Get this variable's explicit type in this scope, if any
+
+      getExplicitType: (name) ->
+        @get(name)?.explicitType
 
 Does this scope have any declared variables?
 
