@@ -1595,7 +1595,7 @@ exports.MetaProperty = class MetaProperty extends Base
       meta: @meta.ast o, LEVEL_ACCESS
       property: @property.ast o
 
-exports.ExplicitType = class ExplicitType extends Base
+exports.AssignExplicitType = class AssignExplicitType extends Base
   constructor: (@identifier, @explicitType) ->
     super()
 
@@ -3892,7 +3892,7 @@ exports.FuncGlyph = class FuncGlyph extends Base
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
 exports.Code = class Code extends Base
-  constructor: (params, body, @funcGlyph, @paramStart) ->
+  constructor: (params, body, @funcGlyph, @paramStart, @explicitType) ->
     super()
 
     @params      = params or []
@@ -3912,7 +3912,7 @@ exports.Code = class Code extends Base
 
     @propagateLhs()
 
-  children: ['params', 'body']
+  children: ['params', 'body']#, 'explicitType']
 
   isStatement: -> @isMethod
 
@@ -4106,6 +4106,9 @@ exports.Code = class Code extends Base
         generatedVariables = o.scope.spliceVariables scopeVariablesCount
         o.scope.parent.addVariables generatedVariables
     signature.push @makeCode ')'
+    if @explicitType?
+      signature.push @makeCode ': '
+      signature.push ...@explicitType.compileNode o
     # Block comments between `)` and `->`/`=>` get output between `)` and `{`.
     if @funcGlyph?.comments?
       comment.unshift = no for comment in @funcGlyph.comments
@@ -4331,7 +4334,7 @@ exports.Code = class Code extends Base
 # these parameters can also attach themselves to the context of the function,
 # as well as be a splat, gathering up a group of parameters into an array.
 exports.Param = class Param extends Base
-  constructor: (@name, @value, @splat) ->
+  constructor: (@name, @explicitType, @value, @splat) ->
     super()
 
     message = isUnassignable @name.unwrapAll().value
@@ -4340,13 +4343,19 @@ exports.Param = class Param extends Base
       token = @name.objects[0].operatorToken
       token.error "unexpected #{token.value}"
 
-  children: ['name', 'value']
+  children: ['name', 'explicitType', 'value']
 
   compileToFragments: (o) ->
-    @name.compileToFragments o, LEVEL_LIST
+    fragments = @name.compileToFragments o, LEVEL_LIST
+    if @explicitType?
+      fragments.push @makeCode(': '), ...@explicitType.compileToFragments o, LEVEL_LIST
+    fragments
 
   compileToFragmentsWithoutComments: (o) ->
-    @name.compileToFragmentsWithoutComments o, LEVEL_LIST
+    fragments = @name.compileToFragmentsWithoutComments o, LEVEL_LIST
+    if @explicitType?
+      fragments.push @makeCode(': '), ...@explicitType.compileToFragmentsWithoutComments o, LEVEL_LIST
+    fragments
 
   asReference: (o) ->
     return @reference if @reference
@@ -5736,6 +5745,39 @@ exports.Sequence = class Sequence extends Base
     return
       expressions:
         expression.ast(o) for expression in @expressions
+
+# Explicit types for TypeScript support
+
+exports.ExplicitTypeIdentifier = class ExplicitTypeIdentifier extends IdentifierLiteral
+
+exports.ExplicitTypeFunction = class ExplicitTypeFunction extends Base
+  constructor: (@params, @body, @funcGlyph) ->
+    super()
+  
+  children: ['params', 'body']
+
+  compileNode: (o) ->
+    fragments = []
+    fragments.push @makeCode '('
+    for param, i in @params
+      fragments.push @makeCode ', ' if i isnt 0
+      fragments.push ...param.compileToFragments o, LEVEL_PAREN
+    fragments.push @makeCode ') => '
+    fragments.push ...@body.compileToFragments o, LEVEL_PAREN
+    fragments
+
+exports.ExplicitTypeParens = class ExplicitTypeParens extends Base
+  constructor: (@body) ->
+    super()
+
+  children: ['body']
+
+  unwrap: -> @body
+
+  compileNode: (o) ->
+    expr = @body.unwrap()
+    fragments = expr.compileToFragments o, LEVEL_PAREN
+    @wrapInParentheses fragments
 
 # Constants
 # ---------

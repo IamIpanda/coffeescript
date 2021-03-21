@@ -328,15 +328,16 @@ grammar =
   # The **Code** node is the function literal. It’s defined by an indented block
   # of **Block** preceded by a function arrow, with an optional parameter list.
   Code: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Block', -> new Code $2, $5, $4, LOC(1)(new Literal $1)
-    o 'FuncGlyph Block',                                 -> new Code [], $2, $1
+    o 'PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Block',
+                                                -> new Code $2, $6, $5, LOC(1)(new Literal $1), $4.type
+    o 'FuncGlyph Block',                        -> new Code [], $2, $1
   ]
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', -> new Code $2, LOC(5)(Block.wrap [$5]), $4,
-                                                              LOC(1)(new Literal $1)
-    o 'FuncGlyph Line',                                 -> new Code [], LOC(2)(Block.wrap [$2]), $1
+    o 'PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Line',
+                                                 -> new Code $2, LOC(6)(Block.wrap [$6]), $5, LOC(1)(new Literal $1), $4.type
+    o 'FuncGlyph Line',                          -> new Code [], LOC(2)(Block.wrap [$2]), $1
   ]
 
   # CoffeeScript has two different symbols for functions. `->` is for ordinary
@@ -364,10 +365,10 @@ grammar =
   # A single parameter in a function definition can be ordinary, or a splat
   # that hoovers up the remaining arguments.
   Param: [
-    o 'ParamVar',                               -> new Param $1
-    o 'ParamVar ...',                           -> new Param $1, null, on
-    o '... ParamVar',                           -> new Param $2, null, postfix: no
-    o 'ParamVar = Expression',                  -> new Param $1, $3
+    o 'ParamVar OptExplicitType',               -> new Param $1, $2.type
+    o 'ParamVar ... OptExplicitType',           -> new Param $1, $3.type, null, on
+    o '... ParamVar OptExplicitType',           -> new Param $2, $3.type, null, postfix: no
+    o 'ParamVar OptExplicitType = Expression',  -> new Param $1, $2.type, $4
     o '...',                                    -> new Expansion
   ]
 
@@ -385,14 +386,27 @@ grammar =
     o '... Expression',                         -> new Splat $2, {postfix: no}
   ]
 
+  TypeSpecifier: [
+    o '~'
+    o 'EXPLICIT_TYPE'
+  ]
+
   TypedIdentifier: [
     o 'Identifier'
-    o 'Identifier ~ ExplicitType',              -> new ExplicitType $1, $3
-    o 'Identifier EXPLICIT_TYPE ExplicitType',  -> new ExplicitType $1, $3
+    o 'Identifier TypeSpecifier ExplicitType',  -> new AssignExplicitType $1, $3
   ]
 
   ExplicitType: [
-    o 'Identifier'
+    o 'IDENTIFIER',                             -> new ExplicitTypeIdentifier $1
+    o 'PARAM_START ParamList PARAM_END FuncGlyph INDENT ExplicitType OUTDENT',
+                                                -> new ExplicitTypeFunction $2, $6, $4
+    o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1
+    o '( ExplicitType )',                       -> new ExplicitTypeParens $2
+  ]
+
+  OptExplicitType: [
+    o '',                                       -> type: null
+    o 'TypeSpecifier ExplicitType',             -> type: $2
   ]
 
   # Variables and properties that can be assigned to.

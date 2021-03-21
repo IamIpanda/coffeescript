@@ -284,6 +284,19 @@ exports.Rewriter = class Rewriter
           returnOnNegativeLevel: yes
         isFunc
 
+      inExplicitType = =>
+        typeSpecifier = @findTagsBackwards i, ['~', 'EXPLICIT_TYPE']
+        return no unless typeSpecifier
+        isFunc = no
+        tagCurrentLine = token[2].first_line
+        @detectEnd i,
+          (token, i) -> token[0] in LINEBREAKS
+          (token, i) ->
+            [prevTag, ,{first_line}] = tokens[i - 1] || []
+            isFunc = tagCurrentLine is first_line and prevTag in ['->', '=>']
+          returnOnNegativeLevel: yes
+        isFunc
+
       # Recognize standard implicit calls like
       # f a, f() b, f? c, h[0] d etc.
       # Added support for spread dots on the left side: f ...a
@@ -293,7 +306,7 @@ exports.Rewriter = class Rewriter
          (nextTag is '...' and @tag(i + 2) in IMPLICIT_CALL and not @findTagsBackwards(i, ['INDEX_START', '['])) or
           nextTag in IMPLICIT_UNSPACED_CALL and
           not nextToken.spaced and not nextToken.newLine) and
-          not inControlFlow()
+          not inControlFlow() and not inExplicitType()
         tag = token[0] = 'FUNC_EXIST' if tag is '?'
         startImplicitCall i + 1
         return forward(2)
@@ -808,6 +821,9 @@ EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat EXPRESSION_END
 
 # Tokens that, if followed by an `IMPLICIT_CALL`, indicate a function invocation.
 IMPLICIT_FUNC    = ['IDENTIFIER', 'PROPERTY', 'SUPER', ')', 'CALL_END', ']', 'INDEX_END', '@', 'THIS']
+
+# Not an implicit call if the IMPLICIT_FUNC is preceded by one of these.
+NOT_IMPLICIT_BEFORE = ['~', 'EXPLICIT_TYPE']
 
 # If preceded by an `IMPLICIT_FUNC`, indicates a function invocation.
 IMPLICIT_CALL    = [
