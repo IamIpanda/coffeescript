@@ -77,6 +77,7 @@ exports.Lexer = class Lexer
            @jsxToken()        or
            @regexToken()      or
            @jsToken()         or
+           @tsToken()         or
            @literalToken()
 
       # Update position.
@@ -747,6 +748,14 @@ exports.Lexer = class Lexer
     last = @ends[i]
     last?.tag is '/>' and last
 
+  tsToken: ->
+    return 0 unless match = TYPESCRIPT.exec @chunk
+    [value] = match
+    tag = value
+    if value in EXPLICIT_TYPE   then tag = 'EXPLICIT_TYPE'
+    @tokens.push @makeToken tag, value
+    value.length
+
   # We treat all other single characters as a token. E.g.: `( ) , . !`
   # Multi-character operators are also literal tokens, so that Jison can assign
   # the proper order of operations. There are some symbols that we tag specially
@@ -805,7 +814,6 @@ exports.Lexer = class Lexer
     else if value in UNARY           then tag = 'UNARY'
     else if value in UNARY_MATH      then tag = 'UNARY_MATH'
     else if value in SHIFT           then tag = 'SHIFT'
-    else if value in EXPLICIT_TYPE   then tag = 'EXPLICIT_TYPE'
     else if value is '?' and prev?.spaced then tag = 'BIN?'
     else if prev
       if value is '(' and not prev.spaced and prev[0] in CALLABLE
@@ -1320,7 +1328,7 @@ NUMBER     = ///
 
 OPERATOR   = /// ^ (
   ?: [-=]>             # function
-   | [-+*/%<>&|^!?=:]= # compound assign / compare
+   | [-+*/%<>&|^!?=]=  # compound assign / compare
    | ~                 # explicit typing (to trigger tagParameters)
    | >>>=?             # zero-fill right shift
    | ([-+:])\1         # doubles
@@ -1397,6 +1405,11 @@ REGEX_ILLEGAL = /// ^ ( / | /{3}\s*) (\*) ///
 
 POSSIBLY_DIVISION   = /// ^ /=?\s ///
 
+# TypeScript features.
+TYPESCRIPT = /// ^ (
+  ?: :=                # explicit typing
+) ///
+
 # Other regexes.
 HERECOMMENT_ILLEGAL = /\*\//
 
@@ -1434,7 +1447,7 @@ UNARY = ['NEW', 'TYPEOF', 'DELETE']
 
 UNARY_MATH = ['!']  # '~', '-', '+' also sometimes act as UNARY_MATH
 
-# Explicit typing.
+# TypeScript tokens.
 EXPLICIT_TYPE = [':=']
 
 # Bit-shifting tokens.
