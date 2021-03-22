@@ -1601,6 +1601,11 @@ exports.AssignExplicitType = class AssignExplicitType extends Base
 
   children: ['identifier', 'explicitType']
 
+  isAssignable: YES
+
+  eachName: (iterator) ->
+    iterator @
+
   compileNode: (o) ->
     name = @identifier.value
     message = isUnassignable name
