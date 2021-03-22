@@ -5771,6 +5771,17 @@ exports.ExplicitTypeFunction = class ExplicitTypeFunction extends Base
     fragments.push ...@body.compileToFragments o, LEVEL_PAREN
     fragments
 
+exports.ExplicitTypeArray = class ExplicitTypeArray extends Base
+  constructor: (@base) ->
+    super()
+
+  children: ['base']
+
+  compileNode: (o) ->
+    fragments = @base.compileNode o
+    fragments.push @makeCode '[]'
+    fragments
+
 exports.ExplicitTypeParens = class ExplicitTypeParens extends Base
   constructor: (@body) ->
     super()

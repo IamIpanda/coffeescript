@@ -401,6 +401,7 @@ grammar =
     o 'PARAM_START ParamList PARAM_END FuncGlyph INDENT ExplicitType OUTDENT',
                                                 -> new ExplicitTypeFunction $2, $6, $4
     o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1
+    o 'ExplicitType [ ]',                       -> new ExplicitTypeArray $1
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
   ]
 

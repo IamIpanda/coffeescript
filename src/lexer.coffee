@@ -819,7 +819,8 @@ exports.Lexer = class Lexer
       if value is '(' and not prev.spaced and prev[0] in CALLABLE
         prev[0] = 'FUNC_EXIST' if prev[0] is '?'
         tag = 'CALL_START'
-      else if value is '[' and ((prev[0] in INDEXABLE and not prev.spaced) or
+      else if value is '[' and not /^\[\s*\]/.test(@chunk) and
+        ((prev[0] in INDEXABLE and not prev.spaced) or
          (prev[0] is '::')) # `.prototype` can’t be a method you can call.
         tag = 'INDEX_START'
         switch prev[0]
