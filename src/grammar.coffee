@@ -784,7 +784,7 @@ grammar =
   # An array of all accepted values for a variable inside the loop.
   # This enables support for pattern matching.
   ForValue: [
-    o 'Identifier'
+    o 'TypedIdentifier'
     o 'ThisProperty'
     o 'Array',                                  -> new Value $1
     o 'Object',                                 -> new Value $1
