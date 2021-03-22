@@ -147,9 +147,11 @@ exports.Rewriter = class Rewriter
     i + j + fuzz - 1
 
   # Returns `yes` if standing in front of something looking like
-  # `@<x>:`, `<x>:` or `<EXPRESSION_START><x>...<EXPRESSION_END>:`.
+  # `@<x>:`, `<x>:`, `<x>?:`, or `<EXPRESSION_START><x>...<EXPRESSION_END>:`.
   looksObjectish: (j) ->
-    return yes if @indexOfTag(j, '@', null, ':') isnt -1 or @indexOfTag(j, null, ':') isnt -1
+    return yes if @indexOfTag(j, '@', null, ':') isnt -1 or
+                  @indexOfTag(j, null, '?', ':') isnt -1 or
+                  @indexOfTag(j, null, ':') isnt -1
     index = @indexOfTag j, EXPRESSION_START
     if index isnt -1
       end = null
@@ -347,6 +349,7 @@ exports.Rewriter = class Rewriter
               startIndex - 1
             else
               startIndex
+          when @tag(i - 1) is '?' then i - 2  # optional keys in object types
           when @tag(i - 2) is '@' then i - 2
           else i - 1
 

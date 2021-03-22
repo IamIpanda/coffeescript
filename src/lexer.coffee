@@ -127,7 +127,7 @@ exports.Lexer = class Lexer
     inJSXTag = @atJSXTag()
     regex = if inJSXTag then JSX_ATTRIBUTE else IDENTIFIER
     return 0 unless match = regex.exec @chunk
-    [input, id, colon] = match
+    [input, id, colon, optional] = match
 
     # Preserve length of id for location data
     idLength = id.length
@@ -248,6 +248,9 @@ exports.Lexer = class Lexer
     if poppedToken
       [tagToken[2].first_line, tagToken[2].first_column, tagToken[2].range[0]] =
         [poppedToken[2].first_line, poppedToken[2].first_column, poppedToken[2].range[0]]
+    if optional
+      optionalOffset = input.lastIndexOf '?'
+      optionalToken = @token '?', '?', offset: optionalOffset
     if colon
       colonOffset = input.lastIndexOf if inJSXTag then '=' else ':'
       colonToken = @token ':', ':', offset: colonOffset
@@ -1284,7 +1287,8 @@ BOM = 65279
 IDENTIFIER = /// ^
   (?!\d)
   ( (?: (?!\s)[$\w\x7f-\uffff] )+ )
-  ( [^\n\S]* : (?![:=]) )?  # Is this a property name?
+  ( ( [^\n\S]* \? )?        # Allow optional properties in explicit types
+    [^\n\S]* : (?![:=]) )?  # Is this a property name?
 ///
 
 # Like `IDENTIFIER`, but includes `-`s

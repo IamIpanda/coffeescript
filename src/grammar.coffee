@@ -403,6 +403,25 @@ grammar =
     o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1
     o 'ExplicitType [ ]',                       -> new ExplicitTypeArray $1
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
+    o '{ ExplicitTypeObjectList OptComma }',    -> new ExplicitTypeObject $2
+  ]
+
+  # Variant form of AssignList
+  ExplicitTypeObjectList: [
+    o '',                                       -> []
+    o 'ExplicitTypeObjectProp',                 -> [$1]
+    o 'ExplicitTypeObjectList , ExplicitTypeObjectProp',
+                                                -> $1.concat $3
+    o 'ExplicitTypeObjectList OptComma TERMINATOR ExplicitTypeObjectProp',
+                                                -> $1.concat $4
+    o 'ExplicitTypeObjectList OptComma INDENT ExplicitTypeObjectList OptComma OUTDENT',
+                                                -> $1.concat $4
+  ]
+
+  # Variant AssignObj, with ability to specify optionals
+  ExplicitTypeObjectProp: [
+    o 'Property : ExplicitType',                -> new ExplicitTypeObjectProp $1, $3
+    o 'Property ? : ExplicitType',              -> new ExplicitTypeObjectProp $1, $4, $2
   ]
 
   OptExplicitType: [

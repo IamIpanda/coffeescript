@@ -5795,6 +5795,35 @@ exports.ExplicitTypeParens = class ExplicitTypeParens extends Base
     fragments = expr.compileToFragments o, LEVEL_PAREN
     @wrapInParentheses fragments
 
+exports.ExplicitTypeObject = class ExplicitTypeObject extends Base
+  constructor: (@properties) ->
+    super()
+
+  children: ['properties']
+
+  compileNode: (o) ->
+    fragments = []
+    fragments.push @makeCode '{'
+    for prop, i in @properties
+      fragments.push @makeCode ', ' if i
+      fragments.push ...prop.compileNode o
+    fragments.push @makeCode '}'
+    fragments
+
+exports.ExplicitTypeObjectProp = class ExplicitTypeObjectProp extends Base
+  constructor: (@variable, @value, @optional) ->
+    super()
+
+  children: ['variable', 'value']
+
+  compileNode: (o) ->
+    fragments = []
+    fragments.push ...@variable.compileNode o
+    fragments.push @makeCode '?' if @optional
+    fragments.push @makeCode ': '
+    fragments.push ...@value.compileNode o
+    fragments
+
 # Constants
 # ---------
 
