@@ -5755,6 +5755,10 @@ exports.Sequence = class Sequence extends Base
 
 exports.ExplicitTypeIdentifier = class ExplicitTypeIdentifier extends IdentifierLiteral
 
+exports.ExplicitTypeNull = class ExplicitTypeNull extends NullLiteral
+
+exports.ExplicitTypeUndefined = class ExplicitTypeUndefined extends UndefinedLiteral
+
 exports.ExplicitTypeFunction = class ExplicitTypeFunction extends Base
   constructor: (@params, @body, @funcGlyph) ->
     super()

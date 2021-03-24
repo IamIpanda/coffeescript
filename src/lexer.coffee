@@ -9,7 +9,7 @@
 # format that can be fed directly into [Jison](https://github.com/zaach/jison).  These
 # are read by jison in the `parser.lexer` function defined in coffeescript.coffee.
 
-{Rewriter, INVERSES, UNFINISHED} = require './rewriter'
+{Rewriter, INVERSES, UNFINISHED, LINEBREAKS} = require './rewriter'
 
 # Import the helpers we need.
 {count, starts, compact, repeat, invertLiterate, merge,
@@ -132,10 +132,10 @@ exports.Lexer = class Lexer
     # Preserve length of id for location data
     idLength = id.length
     poppedToken = undefined
-    if id is 'own' and @tag() is 'FOR'
+    if id is 'own' and @prevTag() is 'FOR'
       @token 'OWN', id
       return id.length
-    if id is 'from' and @tag() is 'YIELD'
+    if id is 'from' and @prevTag() is 'YIELD'
       @token 'FROM', id
       return id.length
     if id is 'as' and @seenImport
@@ -144,11 +144,11 @@ exports.Lexer = class Lexer
       else if @value(yes) in COFFEE_KEYWORDS
         prev = @prev()
         [prev[0], prev[1]] = ['IDENTIFIER', @value(yes)]
-      if @tag() in ['DEFAULT', 'IMPORT_ALL', 'IDENTIFIER']
+      if @prevTag() in ['DEFAULT', 'IMPORT_ALL', 'IDENTIFIER']
         @token 'AS', id
         return id.length
     if id is 'as' and @seenExport
-      if @tag() in ['IDENTIFIER', 'DEFAULT']
+      if @prevTag() in ['IDENTIFIER', 'DEFAULT']
         @token 'AS', id
         return id.length
       if @value(yes) in COFFEE_KEYWORDS
@@ -156,7 +156,7 @@ exports.Lexer = class Lexer
         [prev[0], prev[1]] = ['IDENTIFIER', @value(yes)]
         @token 'AS', id
         return id.length
-    if id is 'default' and @seenExport and @tag() in ['EXPORT', 'AS']
+    if id is 'default' and @seenExport and @prevTag() in ['EXPORT', 'AS']
       @token 'DEFAULT', id
       return id.length
     if id is 'do' and regExSuper = /^(\s*super)(?!\(\))/.exec @chunk[3...]
@@ -180,7 +180,7 @@ exports.Lexer = class Lexer
     if tag is 'IDENTIFIER' and (id in JS_KEYWORDS or id in COFFEE_KEYWORDS) and
        not (@exportSpecifierList and id in COFFEE_KEYWORDS)
       tag = id.toUpperCase()
-      if tag is 'WHEN' and @tag() in LINE_BREAK
+      if tag is 'WHEN' and @prevTag() in LINEBREAKS
         tag = 'LEADING_WHEN'
       else if tag is 'FOR'
         @seenFor = {endsLength: @ends.length}
@@ -592,7 +592,7 @@ exports.Lexer = class Lexer
     @outdebt -= moveOut if dent
     @suppressSemicolons()
 
-    unless @tag() is 'TERMINATOR' or noNewlines
+    unless @prevTag() is 'TERMINATOR' or noNewlines
       terminatorToken = @token 'TERMINATOR', '\n', offset: offset + outdentLength, length: 0
       terminatorToken.endsContinuationLineIndentation = {preContinuationLineIndent: @indent} if endsContinuationLineIndentation
     @indent = decreasedIndent
@@ -611,7 +611,7 @@ exports.Lexer = class Lexer
   # Generate a newline token. Consecutive newlines get merged together.
   newlineToken: (offset) ->
     @suppressSemicolons()
-    @token 'TERMINATOR', '\n', {offset, length: 0} unless @tag() is 'TERMINATOR'
+    @token 'TERMINATOR', '\n', {offset, length: 0} unless @prevTag() is 'TERMINATOR'
     this
 
   # Use a `\` at a line-ending to suppress the newline.
@@ -789,8 +789,9 @@ exports.Lexer = class Lexer
         skipToken = true
       if prev and prev[0] isnt 'PROPERTY'
         origin = prev.origin ? prev
-        message = isUnassignable prev[1], origin[1]
-        @error message, origin[2] if message
+        if (message = isUnassignable prev[1], origin[1]) and not
+           Rewriter::findTagsBackwards.call @, @tokens.length - 1, ['~', 'EXPLICIT_TYPE']
+          @error message, origin[2]
       return value.length if skipToken
 
     if value is '(' and prev?[0] is 'IMPORT'
@@ -842,7 +843,7 @@ exports.Lexer = class Lexer
   # definitions versus argument lists in function calls. Walk backwards, tagging
   # parameters specially in order to make things easier for the parser.
   tagParameters: ->
-    return @tagDoIife() if @tag() isnt ')'
+    return @tagDoIife() if @prevTag() isnt ')'
     stack = []
     {tokens} = this
     i = tokens.length
@@ -1137,9 +1138,11 @@ exports.Lexer = class Lexer
     token
 
   # Peek at the last tag in the token stream.
-  tag: ->
+  prevTag: ->
     [..., token] = @tokens
     token?[0]
+  # Look at an arbitrary token in the token stream, like Rewriter::tag.
+  tag: (i) -> @tokens[i]?[0]
 
   # Peek at the last value in the token stream.
   value: (useOrigin = no) ->
@@ -1152,11 +1155,11 @@ exports.Lexer = class Lexer
   # Get the previous token in the token stream.
   prev: ->
     @tokens[@tokens.length - 1]
-
+  
   # Are we in the midst of an unfinished expression?
   unfinished: ->
     LINE_CONTINUER.test(@chunk) or
-    @tag() in UNFINISHED
+    @prevTag() in UNFINISHED
 
   validateUnicodeCodePointEscapes: (str, options) ->
     replaceUnicodeCodePointEscapes str, merge options, {@error}
@@ -1487,11 +1490,6 @@ COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER']
 #
 # See: http://www-archive.mozilla.org/js/language/js20-2002-04/rationale/syntax.html#regular-expressions
 NOT_REGEX = INDEXABLE.concat ['++', '--']
-
-# Tokens that, when immediately preceding a `WHEN`, indicate that the `WHEN`
-# occurs at the start of a line. We disambiguate these from trailing whens to
-# avoid an ambiguity in the grammar.
-LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR']
 
 # Additional indent in front of these is ignored.
 INDENTABLE_CLOSERS = [')', '}', ']']

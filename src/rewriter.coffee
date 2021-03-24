@@ -850,8 +850,10 @@ IMPLICIT_END     = ['POST_IF', 'FOR', 'WHILE', 'UNTIL', 'WHEN', 'BY',
 SINGLE_LINERS    = ['ELSE', '->', '=>', 'TRY', 'FINALLY', 'THEN']
 SINGLE_CLOSERS   = ['TERMINATOR', 'CATCH', 'FINALLY', 'ELSE', 'OUTDENT', 'LEADING_WHEN']
 
-# Tokens that end a line.
-LINEBREAKS       = ['TERMINATOR', 'INDENT', 'OUTDENT']
+# Tokens that end a line.  In particular, when immediately preceding a `WHEN`,
+# indicate that the `WHEN` occurs at the start of a line. We disambiguate
+# these from trailing whens in the lexer to avoid an ambiguity in the grammar.
+exports.LINEBREAKS = LINEBREAKS = ['TERMINATOR', 'INDENT', 'OUTDENT']
 
 # Tokens that close open calls when they follow a newline.
 CALL_CLOSERS     = ['.', '?.', '::', '?::']
