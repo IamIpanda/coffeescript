@@ -5786,6 +5786,20 @@ exports.ExplicitTypeArray = class ExplicitTypeArray extends Base
     fragments.push @makeCode '[]'
     fragments
 
+exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
+  constructor: (@operator, @first, @second) ->
+    super()
+
+  children: ['first', 'second']
+
+  compileNode: (o) ->
+    [
+      ...@first.compileNode o
+      ...@makeCode " #{@operator} "
+      ...@second.compileNode o
+    ]
+
+
 exports.ExplicitTypeParens = class ExplicitTypeParens extends Base
   constructor: (@body) ->
     super()

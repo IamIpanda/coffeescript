@@ -145,6 +145,8 @@ grammar =
     o 'Code'
     o 'Operation'
     o 'Assign'
+    # TYPABLE
+    #o 'TypedIdentifier'    # assign explicit type to variable without using it
     o 'If'
     o 'Try'
     o 'While'
@@ -248,6 +250,7 @@ grammar =
 
   # Assignment of a variable, property, or index to a value.
   Assign: [
+    # TYPABLE
     o 'Assignable = Expression',                -> new Assign $1, $3
     o 'Assignable = TERMINATOR Expression',     -> new Assign $1, $4
     o 'Assignable = INDENT Expression OUTDENT', -> new Assign $1, $4
@@ -392,8 +395,12 @@ grammar =
   ]
 
   TypedIdentifier: [
-    o 'Identifier'
     o 'Identifier TypeSpecifier ExplicitType',  -> new AssignExplicitType $1, $3
+  ]
+
+  TypableIdentifier: [
+    o 'Identifier'
+    o 'TypedIdentifier'
   ]
 
   ExplicitType: [
@@ -404,6 +411,8 @@ grammar =
                                                 -> new ExplicitTypeFunction $2, $6, $4
     o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1
     o 'ExplicitType [ ]',                       -> new ExplicitTypeArray $1
+    o 'ExplicitType & ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
+    o 'ExplicitType | ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
     o '{ ExplicitTypeObjectList OptComma }',    -> new ExplicitTypeObject $2
   ]
@@ -433,10 +442,16 @@ grammar =
 
   # Variables and properties that can be assigned to.
   SimpleAssignable: [
-    o 'TypedIdentifier',                        -> new Value $1
+    o 'Identifier',                             -> new Value $1
     o 'Value Accessor',                         -> $1.add $2
     o 'Code Accessor',                          -> new Value($1).add $2
     o 'ThisProperty'
+  ]
+
+  # Simple assignable or typed identifier.
+  TypableSimpleAssignable: [
+    o 'SimpleAssignable'
+    #o 'TypedIdentifier'
   ]
 
   # Everything that can be assigned to.
@@ -444,6 +459,12 @@ grammar =
     o 'SimpleAssignable'
     o 'Array',                                  -> new Value $1
     o 'Object',                                 -> new Value $1
+  ]
+
+  # Assignable or typed identifier.
+  TypableAssignable: [
+    o 'Assignable'
+    #o 'TypedIdentifier'
   ]
 
   # The types of things that can be treated as values -- assigned to, invoked
@@ -806,7 +827,9 @@ grammar =
   # An array of all accepted values for a variable inside the loop.
   # This enables support for pattern matching.
   ForValue: [
-    o 'TypedIdentifier'
+    o 'Identifier'
+    # TYPABLE
+    #o 'TypableIdentifier'
     o 'ThisProperty'
     o 'Array',                                  -> new Value $1
     o 'Object',                                 -> new Value $1
@@ -962,6 +985,7 @@ grammar =
     o 'Expression BIN?     Expression',         -> new Op $2, $1, $3
     o 'Expression RELATION Expression',         -> new Op $2.toString(), $1, $3, undefined, invertOperator: $2.invert?.original ? $2.invert
 
+    # TYPABLE
     o 'SimpleAssignable COMPOUND_ASSIGN
        Expression',                             -> new Assign $1, $3, $2.toString(), originalContext: $2.original
     o 'SimpleAssignable COMPOUND_ASSIGN
@@ -989,6 +1013,7 @@ operators = [
   ['right',     'DO_IIFE']
   ['left',      '.', '?.', '::', '?::']
   ['left',      'CALL_START', 'CALL_END']
+  ['left',      '[']        # for array type specifier
   ['nonassoc',  '++', '--']
   ['left',      '?']
   ['right',     'UNARY', 'DO']
