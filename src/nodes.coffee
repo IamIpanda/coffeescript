@@ -5795,7 +5795,7 @@ exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
   compileNode: (o) ->
     [
       ...@first.compileNode o
-      ...@makeCode " #{@operator} "
+      @makeCode " #{@operator} "
       ...@second.compileNode o
     ]
 

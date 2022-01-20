@@ -134,6 +134,8 @@ grammar =
     o 'STATEMENT',                              -> new StatementLiteral $1
     o 'Import'
     o 'Export'
+    o 'TypedIdentifier'  # assign explicit type to variable without using it
+                         # (see Value for why it's not there instead)
   ]
 
   # All the different types of expressions in our language. The basic unit of
@@ -145,8 +147,6 @@ grammar =
     o 'Code'
     o 'Operation'
     o 'Assign'
-    # TYPABLE
-    #o 'TypedIdentifier'    # assign explicit type to variable without using it
     o 'If'
     o 'Try'
     o 'While'
@@ -250,10 +250,12 @@ grammar =
 
   # Assignment of a variable, property, or index to a value.
   Assign: [
-    # TYPABLE
     o 'Assignable = Expression',                -> new Assign $1, $3
     o 'Assignable = TERMINATOR Expression',     -> new Assign $1, $4
     o 'Assignable = INDENT Expression OUTDENT', -> new Assign $1, $4
+    o 'TypedIdentifier = Expression',                -> new Assign $1, $3
+    o 'TypedIdentifier = TERMINATOR Expression',     -> new Assign $1, $4
+    o 'TypedIdentifier = INDENT Expression OUTDENT', -> new Assign $1, $4
   ]
 
   # Assignment when it happens within an object literal. The difference from
@@ -448,12 +450,6 @@ grammar =
     o 'ThisProperty'
   ]
 
-  # Simple assignable or typed identifier.
-  TypableSimpleAssignable: [
-    o 'SimpleAssignable'
-    #o 'TypedIdentifier'
-  ]
-
   # Everything that can be assigned to.
   Assignable: [
     o 'SimpleAssignable'
@@ -461,14 +457,12 @@ grammar =
     o 'Object',                                 -> new Value $1
   ]
 
-  # Assignable or typed identifier.
-  TypableAssignable: [
-    o 'Assignable'
-    #o 'TypedIdentifier'
-  ]
-
   # The types of things that can be treated as values -- assigned to, invoked
   # as functions, indexed into, named as a class, etc.
+  # This would be a natural place to add TypedIdentifier, but this would
+  # make `x ~ string | number` ambiguous: is the `|` part of the type or
+  # part of an Operation?  Instead, we put this in Statement, which makes it
+  # usable in Line and Parenthetical.
   Value: [
     o 'Assignable'
     o 'Literal',                                -> new Value $1
@@ -584,11 +578,11 @@ grammar =
     o 'EXPORT { }',                                          -> new ExportNamedDeclaration new ExportSpecifierList []
     o 'EXPORT { ExportSpecifierList OptComma }',             -> new ExportNamedDeclaration new ExportSpecifierList $3
     o 'EXPORT Class',                                        -> new ExportNamedDeclaration $2
-    o 'EXPORT Identifier = Expression',                      -> new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null,
+    o 'EXPORT TypableIdentifier = Expression',               -> new ExportNamedDeclaration LOC(2,4)(new Assign $2, $4, null,
                                                                                                       moduleDeclaration: 'export')
-    o 'EXPORT Identifier = TERMINATOR Expression',           -> new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null,
+    o 'EXPORT TypableIdentifier = TERMINATOR Expression',    -> new ExportNamedDeclaration LOC(2,5)(new Assign $2, $5, null,
                                                                                                       moduleDeclaration: 'export')
-    o 'EXPORT Identifier = INDENT Expression OUTDENT',       -> new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null,
+    o 'EXPORT TypableIdentifier = INDENT Expression OUTDENT', -> new ExportNamedDeclaration LOC(2,6)(new Assign $2, $5, null,
                                                                                                       moduleDeclaration: 'export')
     o 'EXPORT DEFAULT Expression',                           -> new ExportDefaultDeclaration $3
     o 'EXPORT DEFAULT INDENT Object OUTDENT',                -> new ExportDefaultDeclaration new Value $4
@@ -827,9 +821,7 @@ grammar =
   # An array of all accepted values for a variable inside the loop.
   # This enables support for pattern matching.
   ForValue: [
-    o 'Identifier'
-    # TYPABLE
-    #o 'TypableIdentifier'
+    o 'TypableIdentifier'
     o 'ThisProperty'
     o 'Array',                                  -> new Value $1
     o 'Object',                                 -> new Value $1
@@ -985,7 +977,8 @@ grammar =
     o 'Expression BIN?     Expression',         -> new Op $2, $1, $3
     o 'Expression RELATION Expression',         -> new Op $2.toString(), $1, $3, undefined, invertOperator: $2.invert?.original ? $2.invert
 
-    # TYPABLE
+    # We could allow TypedIdentifier in addition to SimpleAssignable here, but
+    # it doesn't make much sense to type something while compound assigning.
     o 'SimpleAssignable COMPOUND_ASSIGN
        Expression',                             -> new Assign $1, $3, $2.toString(), originalContext: $2.original
     o 'SimpleAssignable COMPOUND_ASSIGN
