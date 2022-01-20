@@ -222,6 +222,11 @@ exports.Rewriter = class Rewriter
         stack.pop()
         tokens.splice j, 0, generate '}', '}', token, prevToken
         i += 1
+        if tokens[j+1]?[0] == 'OUTDENT' and
+           tokens[j+2]?[0] == 'TERMINATOR' and
+           tokens[j+3]?[0] == '='  # assignment after possible type object
+          tokens.splice j+2, 1
+          i -= 1
 
       implicitObjectContinues = (j) =>
         nextTerminatorIdx = null
@@ -875,6 +880,7 @@ DISCARDED = ['(', ')', '[', ']', '{', '}', ':', '.', '..', '...', ',', '=', '++'
 ].concat IMPLICIT_UNSPACED_CALL.concat IMPLICIT_END.concat CALL_CLOSERS.concat CONTROL_IN_IMPLICIT
 
 # Tokens that, when appearing at the end of a line, suppress a following TERMINATOR/INDENT token
-exports.UNFINISHED = UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-', '~',
+exports.UNFINISHED = UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-',
+           # omit '~' here to force types on their own line to be indented
            '**', 'SHIFT', 'RELATION', 'COMPARE', '&', '^', '|', '&&', '||',
            'BIN?', 'EXTENDS']

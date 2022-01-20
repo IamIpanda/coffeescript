@@ -398,6 +398,8 @@ grammar =
 
   TypedIdentifier: [
     o 'Identifier TypeSpecifier ExplicitType',  -> new AssignExplicitType $1, $3
+    o 'Identifier TypeSpecifier INDENT ExplicitType OUTDENT',
+                                                -> new AssignExplicitType $1, $4
   ]
 
   TypableIdentifier: [
