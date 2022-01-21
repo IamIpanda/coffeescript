@@ -412,6 +412,7 @@ grammar =
     o 'IDENTIFIER',                             -> new ExplicitTypeIdentifier $1
     o 'NULL',                                   -> new ExplicitTypeNull $1
     o 'UNDEFINED',                              -> new ExplicitTypeUndefined $1
+    o 'VOID',                                   -> new ExplicitTypeVoid $1
     o 'PARAM_START ParamList PARAM_END FuncGlyph INDENT ExplicitType OUTDENT',
                                                 -> new ExplicitTypeFunction $2, $6, $4
     o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1

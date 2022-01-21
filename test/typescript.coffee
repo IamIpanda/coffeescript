@@ -1,7 +1,7 @@
 ## Basic type annotation and assignment
 
 for type in [
-  'null', 'undefined', 'any', 'unknown', 'number', 'string', 'T'
+  'null', 'undefined', 'void', 'any', 'unknown', 'number', 'string', 'T'
   'number[]', 'number | string', 'number & string',
 ]
   do (type) ->
