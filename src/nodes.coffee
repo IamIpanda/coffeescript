@@ -4339,7 +4339,7 @@ exports.Code = class Code extends Base
 # these parameters can also attach themselves to the context of the function,
 # as well as be a splat, gathering up a group of parameters into an array.
 exports.Param = class Param extends Base
-  constructor: (@name, @explicitType, @value, @splat) ->
+  constructor: (@name, @explicitType, @value, @splat, @question) ->
     super()
 
     message = isUnassignable @name.unwrapAll().value
@@ -4352,12 +4352,14 @@ exports.Param = class Param extends Base
 
   compileToFragments: (o) ->
     fragments = @name.compileToFragments o, LEVEL_LIST
+    fragments.push @makeCode '?' if @question?
     if @explicitType?
       fragments.push @makeCode(': '), ...@explicitType.compileToFragments o, LEVEL_LIST
     fragments
 
   compileToFragmentsWithoutComments: (o) ->
     fragments = @name.compileToFragmentsWithoutComments o, LEVEL_LIST
+    fragments.push @makeCode '?' if @question?
     if @explicitType?
       fragments.push @makeCode(': '), ...@explicitType.compileToFragmentsWithoutComments o, LEVEL_LIST
     fragments

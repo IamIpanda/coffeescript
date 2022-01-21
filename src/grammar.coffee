@@ -371,6 +371,7 @@ grammar =
   # that hoovers up the remaining arguments.
   Param: [
     o 'ParamVar OptExplicitType',               -> new Param $1, $2.type
+    o 'ParamVar ? OptExplicitType',             -> new Param $1, $3.type, null, null, $2
     o 'ParamVar ... OptExplicitType',           -> new Param $1, $3.type, null, on
     o '... ParamVar OptExplicitType',           -> new Param $2, $3.type, null, postfix: no
     o 'ParamVar OptExplicitType = Expression',  -> new Param $1, $2.type, $4

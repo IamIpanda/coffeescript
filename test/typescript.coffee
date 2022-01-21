@@ -71,11 +71,11 @@ test 'optional-argument function type annotation', ->
     add1;
   '''
 test 'optional-argument function annotation', ->
-  eqJS 'add1 = (i? ~ number) ~ number = (i ? 0) + 1', '''
+  eqJS 'add1 = (i? ~ number) ~ number -> (i ? 0) + 1', '''
     var add1;
 
     add1 = function(i?: number): number {
-      return (i != null ? i : 0) + 1;
+      return (typeof i !== "undefined" && i !== null ? i : 0) + 1;
     };
   '''
 test 'default-argument function annotation', ->
