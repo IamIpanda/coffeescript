@@ -28,8 +28,8 @@ Adds a new variable or overrides an existing one.
 
       add: (name, type, immediate) ->
         return @parent.add name, type, immediate if @shared and not immediate
-        if Object::hasOwnProperty.call @positions, name
-          @variables[@positions[name]].type = type
+        if variable = @get name
+          variable.type = type
         else
           @positions[name] = @variables.push({name, type}) - 1
 

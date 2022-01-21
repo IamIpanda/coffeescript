@@ -75,7 +75,7 @@ test 'optional-argument function annotation', ->
     var add1;
 
     add1 = function(i?: number): number {
-      return (typeof i !== "undefined" && i !== null ? i : 0) + 1;
+      return (i != null ? i : 0) + 1;
     };
   '''
 test 'default-argument function annotation', ->
@@ -172,3 +172,18 @@ test 'multi-line for loop annotation', ->
       for i ~ number in [1..10]
         i ** 2
   ''', forOut
+
+# Double declarations
+
+test 'duplicating type fails', ->
+  throws -> CoffeeScript.compile '''
+    x ~ number
+    x ~ number
+  '''
+test 'multiple types fail', ->
+  throws -> CoffeeScript.compile '''
+    x ~ number
+    x ~ string
+  '''
+test 'typing parameter in body fails', ->
+  throws -> CoffeeScript.compile 'f = (x) -> x ~ number'

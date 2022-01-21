@@ -1595,6 +1595,7 @@ exports.MetaProperty = class MetaProperty extends Base
       meta: @meta.ast o, LEVEL_ACCESS
       property: @property.ast o
 
+# variable ~ Type
 exports.AssignExplicitType = class AssignExplicitType extends Base
   constructor: (@identifier, @explicitType) ->
     super()
@@ -1611,11 +1612,25 @@ exports.AssignExplicitType = class AssignExplicitType extends Base
     message = isUnassignable name
     @identifier.error message if message
     Assign::checkNameAssignability o, name
+    if o.scope.type(name) == 'param'
+      @explicitType.error "Attempt to assign parameter #{name} explicit type"
     o.scope.add name, 'var'
     if (oldType = o.scope.getExplicitType name)?
       @explicitType.error "Variable #{name} assigned multiple explicit types: previously #{fragmentsToText oldType} at #{locationDataToString oldType[0].locationData}"
     o.scope.explicitType name, @explicitType.compileNode o
     @identifier.compileNode o
+
+  assigns: (name) ->
+    name == @identifier.value
+
+# Renders as `variable: explicitType`, for inclusion in Assign as Parameter
+exports.WithExplicitType = class WithExplicitType extends AssignExplicitType
+  compileNode: (o) ->
+    [
+      ...@identifier.compileNode o
+      @makeCode ': '
+      ...@explicitType.compileNode o
+    ]
 
   assigns: (name) ->
     name == @identifier.value
@@ -4028,7 +4043,10 @@ exports.Code = class Code extends Base
             ref = param.asReference o
           else
             if param.value? and not param.assignedInBody
-              ref = new Assign new Value(param.name), param.value, null, param: yes
+              ref = param.name
+              if param.explicitType?
+                ref = new WithExplicitType ref, param.explicitType
+              ref = new Assign new Value(ref), param.value, null, param: yes
             else
               ref = param
           # Add this parameter’s reference(s) to the function scope.
@@ -4358,11 +4376,7 @@ exports.Param = class Param extends Base
     fragments
 
   compileToFragmentsWithoutComments: (o) ->
-    fragments = @name.compileToFragmentsWithoutComments o, LEVEL_LIST
-    fragments.push @makeCode '?' if @question?
-    if @explicitType?
-      fragments.push @makeCode(': '), ...@explicitType.compileToFragmentsWithoutComments o, LEVEL_LIST
-    fragments
+    @name.compileToFragmentsWithoutComments o, LEVEL_LIST
 
   asReference: (o) ->
     return @reference if @reference
