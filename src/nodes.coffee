@@ -1604,7 +1604,7 @@ exports.AssignExplicitType = class AssignExplicitType extends Base
   isAssignable: YES
 
   eachName: (iterator) ->
-    iterator @
+    @identifier.eachName iterator
 
   compileNode: (o) ->
     name = @identifier.value
