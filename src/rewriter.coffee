@@ -292,7 +292,7 @@ exports.Rewriter = class Rewriter
         isFunc
 
       inExplicitType = =>
-        typeSpecifier = @findTagsBackwards i, ['~', 'EXPLICIT_TYPE']
+        typeSpecifier = @findTagsBackwards i, EXPLICIT_TYPE_OPS
         return no unless typeSpecifier
         isFunc = no
         tagCurrentLine = token[2].first_line
@@ -670,6 +670,7 @@ exports.Rewriter = class Rewriter
     leading_if_then = null
     # Count `THEN` tags
     ifThens = []
+    inExplicitType = null
 
     condition = (token, i) ->
       token[1] isnt ';' and token[0] in SINGLE_CLOSERS and
@@ -678,7 +679,8 @@ exports.Rewriter = class Rewriter
            (starter isnt 'THEN' or (leading_if_then or leading_switch_when))) and
       not (token[0] in ['CATCH', 'FINALLY'] and starter in ['->', '=>']) or
       token[0] in CALL_CLOSERS and
-      (@tokens[i - 1].newLine or @tokens[i - 1][0] is 'OUTDENT')
+      (@tokens[i - 1].newLine or @tokens[i - 1][0] is 'OUTDENT') or
+      inExplicitType and token[0] is '='  # switch from explicit type to assign
 
     action = (token, i) ->
       ifThens.pop() if token[0] is 'ELSE' and starter is 'THEN'
@@ -740,6 +742,7 @@ exports.Rewriter = class Rewriter
         # `ELSE` tag is not closed.
         if tag is 'ELSE' and @tag(i - 1) isnt 'OUTDENT'
           i = closeElseTag tokens, i
+        inExplicitType = @findTagsBackwards i, EXPLICIT_TYPE_OPS
         tokens.splice i + 1, 0, indent
         @detectEnd i + 2, condition, action
         tokens.splice i, 1 if tag is 'THEN'
@@ -831,7 +834,8 @@ EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat EXPRESSION_END
 IMPLICIT_FUNC    = ['IDENTIFIER', 'PROPERTY', 'SUPER', ')', 'CALL_END', ']', 'INDEX_END', '@', 'THIS']
 
 # Not an implicit call if the IMPLICIT_FUNC is preceded by one of these.
-NOT_IMPLICIT_BEFORE = ['~', 'EXPLICIT_TYPE']
+EXPLICIT_TYPE_OPS = ['~', 'EXPLICIT_TYPE']
+NOT_IMPLICIT_BEFORE = EXPLICIT_TYPE_OPS
 
 # If preceded by an `IMPLICIT_FUNC`, indicates a function invocation.
 IMPLICIT_CALL    = [

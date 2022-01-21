@@ -86,6 +86,12 @@ test 'default-argument function annotation', ->
       return (i != null ? i : 0) + 1;
     };
   '''
+test 'union of function types', ->
+  eqJS 'identity ~ ((i ~ number) -> number) | ((i ~ string) -> string)', '''
+    var identity: ((i: number) => number) | ((i: string) => string);
+
+    identity;
+  '''
 
 ## Object types
 
