@@ -1,9 +1,8 @@
 ## Basic type annotation and assignment
 
 for type in [
-  'null', 'undefined', 'number',
+  'null', 'undefined', 'any', 'unknown', 'number', 'string', 'T'
   'number[]', 'number | string', 'number & string',
-  'T'
 ]
   do (type) ->
     test "#{type} type annotation", ->

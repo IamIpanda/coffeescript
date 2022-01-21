@@ -5758,6 +5758,8 @@ exports.ExplicitTypeIdentifier = class ExplicitTypeIdentifier extends Identifier
 exports.ExplicitTypeNull = class ExplicitTypeNull extends NullLiteral
 
 exports.ExplicitTypeUndefined = class ExplicitTypeUndefined extends UndefinedLiteral
+  compileNode: (o) ->
+    [@makeCode 'undefined']  # can't use void 0 as a type
 
 exports.ExplicitTypeFunction = class ExplicitTypeFunction extends Base
   constructor: (@params, @body, @funcGlyph) ->
