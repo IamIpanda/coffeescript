@@ -9,6 +9,7 @@ for type in [
   'number[]', 'number | string', 'number & string',
   'keyof T', 'keyof {a: T, b: T}', 'readonly string[]', 'unique symbol',
   'typeof x', 'typeof Infinity', 'typeof NaN',
+  'T["key"]', 'T["k"]["l"]', 'aNamespace.T', 'x.y.z',
 ]
   do (type) ->
     test "#{type} type annotation", ->
@@ -27,6 +28,13 @@ for type in [
 test 'raw TypeScript passthrough', ->
   eqJS 'x ~ `T[] extends A<B>`', '''
     var x: T[] extends A<B>;
+
+    x;
+  '''
+
+test '::', ->
+  eqJS 'x ~ typeof Object::toString', '''
+    var x: typeof Object.prototype.toString;
 
     x;
   '''

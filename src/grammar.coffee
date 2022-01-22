@@ -420,6 +420,9 @@ grammar =
                                                 -> new ExplicitTypeFunction $2, $6, $4
     o 'FuncGlyph INDENT ExplicitType OUTDENT',  -> new ExplicitTypeFunction [], $3, $1
     o 'ExplicitType [ ]',                       -> new ExplicitTypeArray $1
+    o 'ExplicitType INDEX_START ExplicitType INDEX_END', -> new ExplicitTypeAccess $1, LOC(3)(new Index $3)
+    o 'ExplicitType . Property',                -> new ExplicitTypeAccess $1, LOC(3)(new Access $3)
+    o 'ExplicitType :: Property',               -> new ExplicitTypeAccess (new ExplicitTypeAccess $1, LOC(2)(new Access new PropertyName('prototype'), shorthand: yes)), LOC(3)(new Access $3)
     o 'ExplicitType & ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o 'ExplicitType | ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
@@ -1016,7 +1019,7 @@ operators = [
   ['right',     'DO_IIFE']
   ['left',      '.', '?.', '::', '?::']
   ['left',      'CALL_START', 'CALL_END']
-  ['right',     '[']        # for array type specifier
+  ['right',     '[', 'INDEX_START']        # [ for array type specifier
   ['nonassoc',  '++', '--']
   ['left',      '?']
   ['right',     'UNARY', 'DO', 'EXPLICIT_TYPE_UNARY']

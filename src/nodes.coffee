@@ -5824,6 +5824,19 @@ exports.ExplicitTypeArray = class ExplicitTypeArray extends Base
     fragments.push @makeCode '[]'
     fragments
 
+# T['foo'] and aNamespace.T
+exports.ExplicitTypeAccess = class ExplicitTypeAccess extends Base
+  constructor: (@base, @property) ->
+    super()
+
+  children: ['base', 'property']
+
+  compileNode: (o) ->
+    [
+      ...@base.compileToFragments o, LEVEL_ACCESS
+      ...@property.compileToFragments o
+    ]
+
 exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
   constructor: (@operator, @first, @second) ->
     super()
