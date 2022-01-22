@@ -4,10 +4,11 @@ test "Unary ~ is not type annotation", ->
   eqJS "x ~number", "x(~number);"
 
 for type in [
-  'null', 'undefined', 'void', 'any', 'unknown', 'number', 'string', 'T',
+  'false', 'true', '7', '"hello"', "''", 'null', 'undefined',
+  'void', 'any', 'unknown', 'number', 'string', 'T',
   'number[]', 'number | string', 'number & string',
   'keyof T', 'keyof {a: T, b: T}', 'readonly string[]', 'unique symbol',
-  'typeof x',
+  'typeof x', 'typeof Infinity', 'typeof NaN',
 ]
   do (type) ->
     test "#{type} type annotation", ->
@@ -22,6 +23,13 @@ for type in [
 
         x = 7;
       """
+
+test 'raw TypeScript passthrough', ->
+  eqJS 'x ~ `T[] extends A<B>`', '''
+    var x: T[] extends A<B>;
+
+    x;
+  '''
 
 ## Function types
 

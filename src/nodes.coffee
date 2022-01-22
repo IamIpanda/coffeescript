@@ -5771,7 +5771,22 @@ exports.Sequence = class Sequence extends Base
 
 exports.ExplicitTypeIdentifier = class ExplicitTypeIdentifier extends IdentifierLiteral
 
-exports.ExplicitTypeNull = class ExplicitTypeNull extends NullLiteral
+exports.ExplicitTypeLiteral = class ExplicitTypeLiteral extends Base
+  constructor: (@literal) ->
+    super()
+
+  children: ['literal']
+
+  compileNode: (o) ->
+    switch @literal.constructor.name
+      when 'UndefinedLiteral'
+        [@makeCode 'undefined']  # `void 0` is an invalid type
+      when 'InfinityLiteral'
+        [@makeCode 'Infinity']  # instead of '2e308'
+      when 'NaNLiteral'
+        [@makeCode 'NaN']  # instead of '0/0'
+      else
+        @literal.compileNode o
 
 # UndefinedLiteral uses void 0, which is an invalid type
 exports.ExplicitTypeUndefined = class ExplicitTypeUndefined extends Literal

@@ -410,8 +410,11 @@ grammar =
 
   ExplicitType: [
     o 'IDENTIFIER',                             -> new ExplicitTypeIdentifier $1
-    o 'NULL',                                   -> new ExplicitTypeNull $1
-    o 'UNDEFINED',                              -> new ExplicitTypeUndefined $1
+    # NUMBER, String, UNDEFINED, NULL, BOOL, INFINITY, NAN are all valid types.
+    # (INFINITY and NAN only within `typeof` operator.)
+    # Also allow JS passthrough in case we're missing support for something.
+    # Literal also includes Regex which is not allowed, but TS will catch it.
+    o 'Literal',                                -> new ExplicitTypeLiteral $1
     o 'VOID',                                   -> new ExplicitTypeVoid $1
     o 'PARAM_START ParamList PARAM_END FuncGlyph INDENT ExplicitType OUTDENT',
                                                 -> new ExplicitTypeFunction $2, $6, $4
