@@ -421,6 +421,7 @@ grammar =
     o 'ExplicitType | ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
     o '{ ExplicitTypeObjectList OptComma }',    -> new ExplicitTypeObject $2
+    o 'EXPLICIT_TYPE_UNARY ExplicitType',       -> new ExplicitTypeOp $1, $2
   ]
 
   # Variant form of AssignList
@@ -1010,7 +1011,7 @@ operators = [
   ['right',     'DO_IIFE']
   ['left',      '.', '?.', '::', '?::']
   ['left',      'CALL_START', 'CALL_END']
-  ['left',      '[']        # for array type specifier
+  ['nonassoc',  '[']        # for array type specifier
   ['nonassoc',  '++', '--']
   ['left',      '?']
   ['right',     'UNARY', 'DO']
@@ -1018,6 +1019,7 @@ operators = [
   ['right',     '**']
   ['right',     'UNARY_MATH']
   ['right',     '~', 'EXPLICIT_TYPE']
+  ['nonassoc',  'EXPLICIT_TYPE_UNARY']  # keyof etc. above &/|
   ['left',      'MATH']
   ['left',      '+', '-']
   ['left',      'SHIFT']

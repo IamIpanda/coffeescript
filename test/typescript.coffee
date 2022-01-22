@@ -1,8 +1,12 @@
 ## Basic type annotation and assignment
 
+test "Unary ~ is not type annotation", ->
+  eqJS "x ~number", "x(~number);"
+
 for type in [
-  'null', 'undefined', 'void', 'any', 'unknown', 'number', 'string', 'T'
+  'null', 'undefined', 'void', 'any', 'unknown', 'number', 'string', 'T',
   'number[]', 'number | string', 'number & string',
+  'keyof T', 'keyof {a: T, b: T}', 'readonly string[]', 'unique symbol',
 ]
   do (type) ->
     test "#{type} type annotation", ->

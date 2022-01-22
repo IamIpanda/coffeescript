@@ -292,17 +292,7 @@ exports.Rewriter = class Rewriter
         isFunc
 
       inExplicitType = =>
-        typeSpecifier = @findTagsBackwards i, EXPLICIT_TYPE_OPS
-        return no unless typeSpecifier
-        isFunc = no
-        tagCurrentLine = token[2].first_line
-        @detectEnd i,
-          (token, i) -> token[0] in LINEBREAKS
-          (token, i) ->
-            [prevTag, ,{first_line}] = tokens[i - 1] || []
-            isFunc = tagCurrentLine is first_line and prevTag in ['->', '=>']
-          returnOnNegativeLevel: yes
-        isFunc
+        @findTagsBackwards i, EXPLICIT_TYPE_ANNOTATIONS
 
       # Recognize standard implicit calls like
       # f a, f() b, f? c, h[0] d etc.
@@ -313,10 +303,15 @@ exports.Rewriter = class Rewriter
          (nextTag is '...' and @tag(i + 2) in IMPLICIT_CALL and not @findTagsBackwards(i, ['INDEX_START', '['])) or
           nextTag in IMPLICIT_UNSPACED_CALL and
           not nextToken.spaced and not nextToken.newLine) and
-          not inControlFlow() and not inExplicitType()
-        tag = token[0] = 'FUNC_EXIST' if tag is '?'
-        startImplicitCall i + 1
-        return forward(2)
+          not inControlFlow()
+        if tag isnt '?' and inExplicitType()
+          # Forbid implicit calls within explicit type, and map keyof etc. to
+          # appropriate token type for grammar.
+          token[0] = 'EXPLICIT_TYPE_UNARY' if token[1] in EXPLICIT_TYPE_UNARY
+        else
+          tag = token[0] = 'FUNC_EXIST' if tag is '?'
+          startImplicitCall i + 1
+          return forward(2)
 
       # Implicit call taking an implicit indented object as first argument.
       #
@@ -742,7 +737,7 @@ exports.Rewriter = class Rewriter
         # `ELSE` tag is not closed.
         if tag is 'ELSE' and @tag(i - 1) isnt 'OUTDENT'
           i = closeElseTag tokens, i
-        inExplicitType = @findTagsBackwards i, EXPLICIT_TYPE_OPS
+        inExplicitType = @findTagsBackwards i, EXPLICIT_TYPE_ANNOTATIONS
         tokens.splice i + 1, 0, indent
         @detectEnd i + 2, condition, action
         tokens.splice i, 1 if tag is 'THEN'
@@ -834,8 +829,14 @@ EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat EXPRESSION_END
 IMPLICIT_FUNC    = ['IDENTIFIER', 'PROPERTY', 'SUPER', ')', 'CALL_END', ']', 'INDEX_END', '@', 'THIS']
 
 # Not an implicit call if the IMPLICIT_FUNC is preceded by one of these.
-EXPLICIT_TYPE_OPS = ['~', 'EXPLICIT_TYPE']
-NOT_IMPLICIT_BEFORE = EXPLICIT_TYPE_OPS
+exports.EXPLICIT_TYPE_ANNOTATIONS = EXPLICIT_TYPE_ANNOTATIONS =
+  ['~', 'EXPLICIT_TYPE']
+NOT_IMPLICIT_BEFORE = EXPLICIT_TYPE_ANNOTATIONS
+
+# These unary type operators should not be treated as implicit function calls
+# when within an explicit type.  Instead, they become token type
+# 'EXPLICIT_TYPE_UNARY' during the rewriting phase.
+EXPLICIT_TYPE_UNARY = ['keyof', 'unique', 'readonly']
 
 # If preceded by an `IMPLICIT_FUNC`, indicates a function invocation.
 IMPLICIT_CALL    = [

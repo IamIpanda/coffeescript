@@ -5815,12 +5815,21 @@ exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
 
   children: ['first', 'second']
 
+  isUnary: ->
+    not @second
+
   compileNode: (o) ->
-    [
-      ...@first.compileNode o
-      @makeCode " #{@operator} "
-      ...@second.compileNode o
-    ]
+    if @isUnary()
+      [
+        @makeCode "#{@operator} "
+        ...@first.compileNode o
+      ]
+    else
+      [
+        ...@first.compileNode o
+        @makeCode " #{@operator} "
+        ...@second.compileNode o
+      ]
 
 
 exports.ExplicitTypeParens = class ExplicitTypeParens extends Base
