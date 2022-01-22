@@ -10,6 +10,7 @@ for type in [
   'keyof T', 'keyof {a: T, b: T}', 'readonly string[]', 'unique symbol',
   'typeof x', 'typeof Infinity', 'typeof NaN',
   'T["key"]', 'T["k"]["l"]', 'aNamespace.T', 'x.y.z',
+  'T<number>', 'Partial<T>', 'Record<string, number>',
 ]
   do (type) ->
     test "#{type} type annotation", ->

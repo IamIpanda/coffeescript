@@ -5837,6 +5837,21 @@ exports.ExplicitTypeAccess = class ExplicitTypeAccess extends Base
       ...@property.compileToFragments o
     ]
 
+exports.ExplicitTypeGeneric = class ExplicitTypeGeneric extends Base
+  constructor: (@base, @arguments) ->
+    super()
+
+  children: ['base', 'arguments']
+
+  compileNode: (o) ->
+    fragments = @base.compileNode o
+    fragments.push @makeCode '<'
+    for argument, i in @arguments
+      fragments.push @makeCode ', ' if i isnt 0
+      fragments.push ...argument.compileToFragments o
+    fragments.push @makeCode '>'
+    fragments
+
 exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
   constructor: (@operator, @first, @second) ->
     super()

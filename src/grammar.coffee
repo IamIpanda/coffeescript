@@ -423,6 +423,7 @@ grammar =
     o 'ExplicitType INDEX_START ExplicitType INDEX_END', -> new ExplicitTypeAccess $1, LOC(3)(new Index $3)
     o 'ExplicitType . Property',                -> new ExplicitTypeAccess $1, LOC(3)(new Access $3)
     o 'ExplicitType :: Property',               -> new ExplicitTypeAccess (new ExplicitTypeAccess $1, LOC(2)(new Access new PropertyName('prototype'), shorthand: yes)), LOC(3)(new Access $3)
+    o 'ExplicitType < ExplicitTypeArguments >', -> new ExplicitTypeGeneric $1, $3
     o 'ExplicitType & ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o 'ExplicitType | ExplicitType',            -> new ExplicitTypeOp $2, $1, $3
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
@@ -448,6 +449,17 @@ grammar =
   ExplicitTypeObjectProp: [
     o 'Property : ExplicitType',                -> new ExplicitTypeObjectProp $1, $3
     o 'Property ? : ExplicitType',              -> new ExplicitTypeObjectProp $1, $4, $2
+  ]
+
+  # Use of type template, such as <number, string>.  Based on AssignList.
+  ExplicitTypeArguments: [
+    o '',                                       -> []
+    o 'ExplicitType',                           -> [$1]
+    o 'ExplicitTypeArguments , ExplicitType',   -> $1.concat $3
+    o 'ExplicitTypeArguments OptComma TERMINATOR ExplicitType',
+                                                -> $1.concat $4
+    o 'ExplicitTypeArguments OptComma INDENT ExplicitTypeArguments OptComma OUTDENT',
+                                                -> $1.concat $4
   ]
 
   OptExplicitType: [
@@ -982,6 +994,8 @@ grammar =
     o 'Expression **       Expression',         -> new Op $2, $1, $3
     o 'Expression SHIFT    Expression',         -> new Op $2, $1, $3
     o 'Expression COMPARE  Expression',         -> new Op $2.toString(), $1, $3, undefined, originalOperator: $2.original
+    o 'Expression <        Expression',         -> new Op '<', $1, $3, undefined, originalOperator: $2.original
+    o 'Expression >        Expression',         -> new Op '>', $1, $3, undefined, originalOperator: $2.original
     o 'Expression &        Expression',         -> new Op $2, $1, $3
     o 'Expression ^        Expression',         -> new Op $2, $1, $3
     o 'Expression |        Expression',         -> new Op $2, $1, $3
@@ -1031,7 +1045,7 @@ operators = [
   ['left',      '+', '-']
   ['left',      'SHIFT']
   ['left',      'RELATION']
-  ['left',      'COMPARE']
+  ['left',      'COMPARE', '<', '>']
   ['left',      '&']
   ['left',      '^']
   ['left',      '|']

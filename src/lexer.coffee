@@ -1449,7 +1449,7 @@ EXPLICIT_TYPE = [':=']  # '~' needs to be left alone, to allow for unary op
 SHIFT = ['<<', '>>', '>>>']
 
 # Comparison tokens.
-COMPARE = ['==', '!=', '<', '>', '<=', '>=']
+COMPARE = ['==', '!=', '<=', '>=']  # '<', '>' separate for generic types
 
 # Mathematical tokens.
 MATH = ['*', '/', '%', '//', '%%']
