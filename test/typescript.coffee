@@ -7,6 +7,7 @@ for type in [
   'null', 'undefined', 'void', 'any', 'unknown', 'number', 'string', 'T',
   'number[]', 'number | string', 'number & string',
   'keyof T', 'keyof {a: T, b: T}', 'readonly string[]', 'unique symbol',
+  'typeof x',
 ]
   do (type) ->
     test "#{type} type annotation", ->
@@ -95,6 +96,18 @@ test 'union of function types', ->
     var identity: ((i: number) => number) | ((i: string) => string);
 
     identity;
+  '''
+test 'argumentless constructor type', ->
+  eqJS 'c ~ new -> T', '''
+    var c: new () => T;
+    
+    c;
+  '''
+test '1-argument constructor type', ->
+  eqJS 'c ~ new (x ~ number) -> T', '''
+    var c: new (x: number) => T;
+
+    c;
   '''
 
 ## Object types

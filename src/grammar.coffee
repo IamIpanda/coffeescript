@@ -422,6 +422,8 @@ grammar =
     o '( ExplicitType )',                       -> new ExplicitTypeParens $2
     o '{ ExplicitTypeObjectList OptComma }',    -> new ExplicitTypeObject $2
     o 'EXPLICIT_TYPE_UNARY ExplicitType',       -> new ExplicitTypeOp $1, $2
+    # `typeof` and `new`. `delete` will get detected by TS.
+    o 'UNARY ExplicitType',                     -> new ExplicitTypeOp $1, $2
   ]
 
   # Variant form of AssignList
@@ -1011,15 +1013,14 @@ operators = [
   ['right',     'DO_IIFE']
   ['left',      '.', '?.', '::', '?::']
   ['left',      'CALL_START', 'CALL_END']
-  ['nonassoc',  '[']        # for array type specifier
+  ['right',     '[']        # for array type specifier
   ['nonassoc',  '++', '--']
   ['left',      '?']
-  ['right',     'UNARY', 'DO']
+  ['right',     'UNARY', 'DO', 'EXPLICIT_TYPE_UNARY']
   ['right',     'AWAIT']
   ['right',     '**']
   ['right',     'UNARY_MATH']
   ['right',     '~', 'EXPLICIT_TYPE']
-  ['nonassoc',  'EXPLICIT_TYPE_UNARY']  # keyof etc. above &/|
   ['left',      'MATH']
   ['left',      '+', '-']
   ['left',      'SHIFT']
