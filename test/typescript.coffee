@@ -126,6 +126,30 @@ test '1-argument constructor type', ->
 
     c;
   '''
+test 'argumentless generic function', ->
+  eqJS 'none = <T> -> null', '''
+    var none;
+
+    none = function<T>() {
+      return null;
+    };
+  '''
+test 'simple generic function', ->
+  eqJS 'identity = <T>(x ~ T) ~ T -> x', '''
+    var identity;
+
+    identity = function<T>(x: T): T {
+      return x;
+    };
+  '''
+test 'complex generic function', ->
+  eqJS 'f = <T, S = T, Q = any>(x ~ T, y ~ S, z ~ Q) ~ T|S|Q -> x or y or z', '''
+    var f;
+
+    f = function<T, S = T, Q = any>(x: T, y: S, z: Q): T | S | Q {
+      return x || y || z;
+    };
+  '''
 
 ## Object types
 

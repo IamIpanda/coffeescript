@@ -336,13 +336,19 @@ grammar =
     o 'PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Block',
                                                 -> new Code $2, $6, $5, LOC(1)(new Literal $1), $4.type
     o 'FuncGlyph Block',                        -> new Code [], $2, $1
+    o 'ExplicitTypeParameters PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Block',
+                                                -> new Code $3, $7, $6, LOC(2)(new Literal $2), $5.type, $1
+    o 'ExplicitTypeParameters FuncGlyph Block', -> new Code [], $3, $2, null, null, $1
   ]
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
     o 'PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Line',
-                                                 -> new Code $2, LOC(6)(Block.wrap [$6]), $5, LOC(1)(new Literal $1), $4.type
-    o 'FuncGlyph Line',                          -> new Code [], LOC(2)(Block.wrap [$2]), $1
+                                                -> new Code $2, LOC(6)(Block.wrap [$6]), $5, LOC(1)(new Literal $1), $4.type
+    o 'FuncGlyph Line',                         -> new Code [], LOC(2)(Block.wrap [$2]), $1
+    o 'ExplicitTypeParameters PARAM_START ParamList PARAM_END OptExplicitType FuncGlyph Line',
+                                                -> new Code $3, LOC(7)(Block.wrap [$7]), $6, LOC(2)(new Literal $2), $5.type, $1
+    o 'ExplicitTypeParameters FuncGlyph Line',  -> new Code [], LOC(3)(Block.wrap [$3]), $2, null, null, $1
   ]
 
   # CoffeeScript has two different symbols for functions. `->` is for ordinary
@@ -445,7 +451,7 @@ grammar =
                                                 -> $1.concat $4
   ]
 
-  # Variant AssignObj, with ability to specify optionals
+  # Variant of AssignObj, with ability to specify optionals
   ExplicitTypeObjectProp: [
     o 'Property : ExplicitType',                -> new ExplicitTypeObjectProp $1, $3
     o 'Property ? : ExplicitType',              -> new ExplicitTypeObjectProp $1, $4, $2
@@ -460,6 +466,35 @@ grammar =
                                                 -> $1.concat $4
     o 'ExplicitTypeArguments OptComma INDENT ExplicitTypeArguments OptComma OUTDENT',
                                                 -> $1.concat $4
+  ]
+
+  #OptExplicitTypeParameters: [
+  #  o '',
+  #  o 'ExplicitTypeParameters'
+  #]
+
+  # Definition of type template, which can have defaults like <T = any>.
+  ExplicitTypeParameters: [
+    o '< ExplicitTypeParameterList >',          -> $2
+  ]
+
+  ExplicitTypeParameterList: [
+    o '',                                       -> []
+    o 'ExplicitType',                           -> [$1]
+    o 'ExplicitTypeParameterList , ExplicitTypeParameter',
+                                                -> $1.concat $3
+    o 'ExplicitTypeParameterList OptComma TERMINATOR ExplicitTypeParameter',
+                                                -> $1.concat $4
+    o 'ExplicitTypeParameterList OptComma INDENT ExplicitTypeParameters OptComma OUTDENT',
+                                                -> $1.concat $4
+  ]
+
+  # Variant of AssignObj
+  ExplicitTypeParameter: [
+    o 'Identifier'
+    o 'Identifier = ExplicitType',              -> new ExplicitTypeAssign $1, $3
+    o 'Identifier =
+       INDENT ExplicitType OUTDENT',            -> new ExplicitTypeAssign $1, $4
   ]
 
   OptExplicitType: [

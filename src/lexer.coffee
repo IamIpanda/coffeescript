@@ -638,7 +638,7 @@ exports.Lexer = class Lexer
         not (prev = @prev()) or
         prev.spaced or
         prev[0] not in COMPARABLE_LEFT_SIDE
-      )
+      ) and not GENERIC_FUNCTION_NOT_JSX.exec @chunk
       [input, id] = match
       fullId = id
       if '.' in id
@@ -1314,6 +1314,11 @@ JSX_ATTRIBUTE = /// ^
     (?: \s* : \s* #{JSX_IDENTIFIER_PART}       # JSXNamespacedName
     )? )
   ( [^\S]* = (?!=) )?  # Is this an attribute with a value?
+///
+
+# TypeScript generic arrow functions `<T>(args) -> ...` look like JSX.
+GENERIC_FUNCTION_NOT_JSX = /// ^
+  < [^<>]* > [^<>{]* [-=]>
 ///
 
 NUMBER     = ///

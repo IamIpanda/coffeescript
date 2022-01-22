@@ -3912,7 +3912,7 @@ exports.FuncGlyph = class FuncGlyph extends Base
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
 exports.Code = class Code extends Base
-  constructor: (params, body, @funcGlyph, @paramStart, @explicitType) ->
+  constructor: (params, body, @funcGlyph, @paramStart, @explicitType, @typeParams) ->
     super()
 
     @params      = params or []
@@ -4112,7 +4112,15 @@ exports.Code = class Code extends Base
     else if @isGenerator
       modifiers.push '*'
 
-    signature = [@makeCode '(']
+    signature = []
+    # Generic type parameters
+    if @typeParams?
+      signature.push @makeCode '<'
+      for typeParam, i in @typeParams
+        signature.push @makeCode ', ' if i isnt 0
+        signature.push ...typeParam.compileToFragments o
+      signature.push @makeCode '>'
+    signature.push @makeCode '('
     # Block comments between a function name and `(` get output between
     # `function` and `(`.
     if @paramStart?.comments?
@@ -5851,6 +5859,20 @@ exports.ExplicitTypeGeneric = class ExplicitTypeGeneric extends Base
       fragments.push ...argument.compileToFragments o
     fragments.push @makeCode '>'
     fragments
+
+# `T = S` in generic < ... >.  Avoid variable declaration like Assign.
+exports.ExplicitTypeAssign = class ExplicitTypeAssign extends Base
+  constructor: (@variable, @value) ->
+    super()
+
+  children: ['variable', 'value']
+
+  compileNode: (o) ->
+    [
+      ...@variable.compileNode o
+      @makeCode ' = '
+      ...@value.compileNode o
+    ]
 
 exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
   constructor: (@operator, @first, @second) ->
