@@ -635,10 +635,13 @@ exports.Lexer = class Lexer
       return 0 unless match and (
         @jsxDepth > 0 or
         # Not the right hand side of an unspaced comparison (i.e. `a<b`).
-        not (prev = @prev()) or
-        prev.spaced or
-        prev[0] not in COMPARABLE_LEFT_SIDE
-      ) and not GENERIC_FUNCTION_NOT_JSX.exec @chunk
+        (not (prev = @prev()) or
+         prev.spaced or
+         prev[0] not in COMPARABLE_LEFT_SIDE) and
+        (not (notMatch = GENERIC_FUNCTION_NOT_JSX.exec @chunk) or
+         notMatch[1]? and
+         count(notMatch[1], '{') != count(notMatch[1], '}'))
+      )
       [input, id] = match
       fullId = id
       if '.' in id
@@ -1317,8 +1320,12 @@ JSX_ATTRIBUTE = /// ^
 ///
 
 # TypeScript generic arrow functions `<T>(args) -> ...` look like JSX.
+# jsxToken additionally checks that group 1 has balanced braces, so the arrow
+# isn't in a JSX interpolation.
 GENERIC_FUNCTION_NOT_JSX = /// ^
-  < [^<>]* > [^<>{]* [-=]>
+  < [^<>]* > \s*      # generic parameters
+  (?: \( ([^<>]*) )?  # nothing before arrow, or an open paren and no angles
+  [-=]>               # arrow
 ///
 
 NUMBER     = ///

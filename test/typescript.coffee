@@ -150,6 +150,22 @@ test 'complex generic function', ->
       return x || y || z;
     };
   '''
+test 'generic function with brace in arguments', ->
+  eqJS 'f = <T>(options ~ {x: T}) ~ T -> options.x', '''
+    var f;
+
+    f = function<T>(options: {x: T}): T {
+      return options.x;
+    };
+  '''
+test 'JSX that looks like a generic function', ->
+  eqJS 'dom = <Component>(hello) {-> signal()}</Component>', '''
+    var dom;
+
+    dom = <Component>(hello) {function() {
+      return signal();
+    }}</Component>;
+  '''
 
 ## Object types
 
