@@ -468,14 +468,9 @@ grammar =
                                                 -> $1.concat $4
   ]
 
-  #OptExplicitTypeParameters: [
-  #  o '',
-  #  o 'ExplicitTypeParameters'
-  #]
-
   # Definition of type template, which can have defaults like <T = any>.
   ExplicitTypeParameters: [
-    o '< ExplicitTypeParameterList >',          -> $2
+    o '< ExplicitTypeParameterList >',          -> new ExplicitTypeParameters $2
   ]
 
   ExplicitTypeParameterList: [
@@ -589,7 +584,7 @@ grammar =
   ]
 
   # Class definitions have optional bodies of prototype property assignments,
-  # and optional references to the superclass.
+  # optional generic type parameters, and optional references to the superclass.
   Class: [
     o 'CLASS',                                           -> new Class
     o 'CLASS Block',                                     -> new Class null, null, $2
@@ -599,6 +594,13 @@ grammar =
     o 'CLASS SimpleAssignable Block',                    -> new Class $2, null, $3
     o 'CLASS SimpleAssignable EXTENDS Expression',       -> new Class $2, $4
     o 'CLASS SimpleAssignable EXTENDS Expression Block', -> new Class $2, $4, $5
+    o 'CLASS SimpleAssignable ExplicitTypeParameters',   -> new Class $2, null, null, $3
+    o 'CLASS SimpleAssignable ExplicitTypeParameters Block',
+                                                         -> new Class $2, null, $4, $3
+    o 'CLASS SimpleAssignable ExplicitTypeParameters EXTENDS Expression',
+                                                          -> new Class $2, $5, null, $3
+    o 'CLASS SimpleAssignable ExplicitTypeParameters EXTENDS Expression Block',
+                                                          -> new Class $2, $5, $6, $3
   ]
 
   Import: [

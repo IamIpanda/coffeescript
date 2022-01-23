@@ -2828,9 +2828,9 @@ exports.Arr = class Arr extends Base
 # Initialize a **Class** with its name, an optional superclass, and a body.
 
 exports.Class = class Class extends Base
-  children: ['variable', 'parent', 'body']
+  children: ['variable', 'parent', 'body', 'typeParams']
 
-  constructor: (@variable, @parent, @body) ->
+  constructor: (@variable, @parent, @body, @typeParams) ->
     super()
     unless @body?
       @body = new Block
@@ -2876,6 +2876,7 @@ exports.Class = class Class extends Base
     result = []
     result.push @makeCode "class "
     result.push @makeCode @name if @name
+    result.push ...@typeParams.compileToFragments o if @typeParams?
     @compileCommentFragments o, @variable, result if @variable?.comments?
     result.push @makeCode ' ' if @name
     result.push @makeCode('extends '), @parent.compileToFragments(o)..., @makeCode ' ' if @parent
@@ -4113,13 +4114,7 @@ exports.Code = class Code extends Base
       modifiers.push '*'
 
     signature = []
-    # Generic type parameters
-    if @typeParams?
-      signature.push @makeCode '<'
-      for typeParam, i in @typeParams
-        signature.push @makeCode ', ' if i isnt 0
-        signature.push ...typeParam.compileToFragments o
-      signature.push @makeCode '>'
+    signature.push ...@typeParams.compileToFragments o if @typeParams?
     signature.push @makeCode '('
     # Block comments between a function name and `(` get output between
     # `function` and `(`.
@@ -5873,6 +5868,21 @@ exports.ExplicitTypeAssign = class ExplicitTypeAssign extends Base
       @makeCode ' = '
       ...@value.compileNode o
     ]
+
+exports.ExplicitTypeParameters = class ExplicitTypeParameters extends Base
+  constructor: (@parameters) ->
+    super()
+
+  children: ['parameters']
+
+  compileNode: (o) ->
+    fragments = []
+    fragments.push @makeCode '<'
+    for parameter, i in @parameters
+      fragments.push @makeCode ', ' if i isnt 0
+      fragments.push ...parameter.compileToFragments o
+    fragments.push @makeCode '>'
+    fragments
 
 exports.ExplicitTypeOp = class ExplicitTypeOp extends Base
   constructor: (@operator, @first, @second) ->

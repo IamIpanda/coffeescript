@@ -167,6 +167,23 @@ test 'JSX that looks like a generic function', ->
     }}</Component>;
   '''
 
+## Classes
+
+test 'parameterized class', ->
+  eqJS '''
+    class C<T>
+      constructor: (@x ~ T) ->
+  ''', '''
+    var C;
+
+    C = class C<T> {
+      constructor(x: T) {
+        this.x = x;
+      }
+
+    };
+  '''
+
 ## Object types
 
 test '1-line object type annotation with assignment', ->
