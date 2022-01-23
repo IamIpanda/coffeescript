@@ -413,6 +413,7 @@ exports.Base = class Base
   isChainable: NO
   isAssignable: NO
   isNumber: NO
+  isNoOp: NO
 
   unwrap: THIS
   unfoldSoak: NO
@@ -658,7 +659,9 @@ exports.Block = class Block extends Base
           [..., lastFragment] = fragments
           unless lastFragment.code is '' or lastFragment.isComment
             fragments.push @makeCode ';'
-        compiledNodes.push fragments
+        compiledNodes.push fragments unless node.isNoOp()
+      else if node.isNoOp()
+        node.compileToFragments o, LEVEL_LIST
       else
         compiledNodes.push node.compileToFragments o, LEVEL_LIST
     if top
@@ -1603,6 +1606,7 @@ exports.AssignExplicitType = class AssignExplicitType extends Base
   children: ['identifier', 'explicitType']
 
   isAssignable: YES
+  isNoOp: YES
 
   eachName: (iterator) ->
     @identifier.eachName iterator

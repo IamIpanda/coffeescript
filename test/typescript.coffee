@@ -14,11 +14,7 @@ for type in [
 ]
   do (type) ->
     test "#{type} type annotation", ->
-      eqJS "x ~ #{type}", """
-        var x: #{type};
-
-        x;
-      """
+      eqJS "x ~ #{type}", "var x: #{type};"
     test "#{type} type annotation with assignment", ->
       eqJS "x ~ #{type} = 7", """
         var x: #{type};
@@ -27,27 +23,18 @@ for type in [
       """
 
 test 'raw TypeScript passthrough', ->
-  eqJS 'x ~ `T[] extends A<B>`', '''
-    var x: T[] extends A<B>;
-
-    x;
-  '''
+  eqJS 'x ~ `T[] extends A<B>`',
+    'var x: T[] extends A<B>;'
 
 test '::', ->
-  eqJS 'x ~ typeof Object::toString', '''
-    var x: typeof Object.prototype.toString;
-
-    x;
-  '''
+  eqJS 'x ~ typeof Object::toString',
+    'var x: typeof Object.prototype.toString;'
 
 ## Function types
 
 test 'argumentless function type annotation', ->
-  eqJS 'zero ~ -> number', '''
-    var zero: () => number;
-
-    zero;
-  '''
+  eqJS 'zero ~ -> number',
+    'var zero: () => number;'
 test 'argumentless function type annotation with assignment', ->
   eqJS 'zero ~ -> number = -> 0', '''
     var zero: () => number;
@@ -65,11 +52,8 @@ test 'argumentless function annotation', ->
     };
   '''
 test '1-argument function type annotation', ->
-  eqJS 'add1 ~ (i ~ number) -> number', '''
-    var add1: (i: number) => number;
-
-    add1;
-  '''
+  eqJS 'add1 ~ (i ~ number) -> number',
+    'var add1: (i: number) => number;'
 test '1-argument function annotation', ->
   eqJS 'add1 = (i ~ number) ~ number -> i+1', '''
     var add1;
@@ -87,11 +71,8 @@ test '1-argument function annotation without return value', ->
     };
   '''
 test 'optional-argument function type annotation', ->
-  eqJS 'add1 ~ (i? ~ number) -> number', '''
-    var add1: (i?: number) => number;
-
-    add1;
-  '''
+  eqJS 'add1 ~ (i? ~ number) -> number',
+    'var add1: (i?: number) => number;'
 test 'optional-argument function annotation', ->
   eqJS 'add1 = (i? ~ number) ~ number -> (i ? 0) + 1', '''
     var add1;
@@ -109,23 +90,14 @@ test 'default-argument function annotation', ->
     };
   '''
 test 'union of function types', ->
-  eqJS 'identity ~ ((i ~ number) -> number) | ((i ~ string) -> string)', '''
-    var identity: ((i: number) => number) | ((i: string) => string);
-
-    identity;
-  '''
+  eqJS 'identity ~ ((i ~ number) -> number) | ((i ~ string) -> string)',
+    'var identity: ((i: number) => number) | ((i: string) => string);'
 test 'argumentless constructor type', ->
-  eqJS 'c ~ new -> T', '''
-    var c: new () => T;
-    
-    c;
-  '''
+  eqJS 'c ~ new -> T',
+    'var c: new () => T;'
 test '1-argument constructor type', ->
-  eqJS 'c ~ new (x ~ number) -> T', '''
-    var c: new (x: number) => T;
-
-    c;
-  '''
+  eqJS 'c ~ new (x ~ number) -> T',
+    'var c: new (x: number) => T;'
 test 'argumentless generic function', ->
   eqJS 'none = <T> -> null', '''
     var none;
@@ -199,11 +171,7 @@ test 'indented object type annotation', ->
     o ~
       key: string
       value?: any
-  ''', '''
-    var o: {key: string, value?: any};
-
-    o;
-  '''
+  ''', 'var o: {key: string, value?: any};'
 test 'indented object type annotation with assignment', ->
   eqJS '''
     o ~
@@ -232,11 +200,8 @@ test 'inner annotation shadows outer', ->
   ''', '''
     var f, i: number;
 
-    i;
-
     f = function() {
       var i: number;
-      i;
       return i;
     };
   '''
