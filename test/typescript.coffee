@@ -30,6 +30,16 @@ test '::', ->
   eqJS 'x ~ typeof Object::toString',
     'var x: typeof Object.prototype.toString;'
 
+test 'Type specification after assignment', ->
+  eqJS '''
+    x = 5
+    x ~ number
+  ''', '''
+    var x: number;
+
+    var x = 5;
+  '''
+
 ## Function types
 
 test 'argumentless function type annotation', ->
@@ -45,9 +55,7 @@ test 'argumentless function type annotation with assignment', ->
   '''
 test 'argumentless function annotation', ->
   eqJS 'zero = () ~ number -> 0', '''
-    var zero;
-
-    zero = function(): number {
+    var zero = function(): number {
       return 0;
     };
   '''
@@ -56,17 +64,13 @@ test '1-argument function type annotation', ->
     'var add1: (i: number) => number;'
 test '1-argument function annotation', ->
   eqJS 'add1 = (i ~ number) ~ number -> i+1', '''
-    var add1;
-
-    add1 = function(i: number): number {
+    var add1 = function(i: number): number {
       return i + 1;
     };
   '''
 test '1-argument function annotation without return value', ->
   eqJS 'add1 = (i ~ number) -> i+1', '''
-    var add1;
-
-    add1 = function(i: number) {
+    var add1 = function(i: number) {
       return i + 1;
     };
   '''
@@ -75,17 +79,13 @@ test 'optional-argument function type annotation', ->
     'var add1: (i?: number) => number;'
 test 'optional-argument function annotation', ->
   eqJS 'add1 = (i? ~ number) ~ number -> (i ? 0) + 1', '''
-    var add1;
-
-    add1 = function(i?: number): number {
+    var add1 = function(i?: number): number {
       return (i != null ? i : 0) + 1;
     };
   '''
 test 'default-argument function annotation', ->
   eqJS 'add1 = (i ~ number = 0) ~ number -> (i ? 0) + 1', '''
-    var add1;
-
-    add1 = function(i: number = 0): number {
+    var add1 = function(i: number = 0): number {
       return (i != null ? i : 0) + 1;
     };
   '''
@@ -100,41 +100,31 @@ test '1-argument constructor type', ->
     'var c: new (x: number) => T;'
 test 'argumentless generic function', ->
   eqJS 'none = <T> -> null', '''
-    var none;
-
-    none = function<T>() {
+    var none = function<T>() {
       return null;
     };
   '''
 test 'simple generic function', ->
   eqJS 'identity = <T>(x ~ T) ~ T -> x', '''
-    var identity;
-
-    identity = function<T>(x: T): T {
+    var identity = function<T>(x: T): T {
       return x;
     };
   '''
 test 'complex generic function', ->
   eqJS 'f = <T, S = T, Q = any>(x ~ T, y ~ S, z ~ Q) ~ T|S|Q -> x or y or z', '''
-    var f;
-
-    f = function<T, S = T, Q = any>(x: T, y: S, z: Q): T | S | Q {
+    var f = function<T, S = T, Q = any>(x: T, y: S, z: Q): T | S | Q {
       return x || y || z;
     };
   '''
 test 'generic function with brace in arguments', ->
   eqJS 'f = <T>(options ~ {x: T}) ~ T -> options.x', '''
-    var f;
-
-    f = function<T>(options: {x: T}): T {
+    var f = function<T>(options: {x: T}): T {
       return options.x;
     };
   '''
 test 'JSX that looks like a generic function', ->
   eqJS 'dom = <Component>(hello) {-> signal()}</Component>', '''
-    var dom;
-
-    dom = <Component>(hello) {function() {
+    var dom = <Component>(hello) {function() {
       return signal();
     }}</Component>;
   '''
@@ -146,9 +136,7 @@ test 'parameterized class', ->
     class C<T>
       constructor: (@x ~ T) ->
   ''', '''
-    var C;
-
-    C = class C<T> {
+    var C = class C<T> {
       constructor(x: T) {
         this.x = x;
       }
@@ -198,20 +186,18 @@ test 'inner annotation shadows outer', ->
       i ~ number
       i
   ''', '''
-    var f, i: number;
+    var i: number;
 
-    f = function() {
+    var f = function() {
       var i: number;
       return i;
     };
   '''
 forOut = '''
-  var f;
-
-  f = function() {
-    var i: number, j, results;
-    results = [];
-    for (i = j = 1; j <= 10; i = ++j) {
+  var f = function() {
+    var i: number;
+    var results = [];
+    for (var j = 1, i = j; j <= 10; i = ++j) {
       results.push(i ** 2);
     }
     return results;

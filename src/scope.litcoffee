@@ -78,8 +78,8 @@ Generate a temporary variable name at the given index.
         else
           "#{name}#{index or ''}"
 
-Gets a variable and its associated data from this scope (not ancesotrs),
-or `undefined` if it doesn't exist,
+Gets a variable and its associated data from this scope (not ancestors),
+or `undefined` if it doesn't exist.
 
       get: (name) ->
         @variables[@positions[name]] if Object::hasOwnProperty.call @positions, name
@@ -100,6 +100,7 @@ compiler-generated variable. `_var`, `_var2`, and so on...
           break unless @check(temp) or temp in @root.referencedVars
           index++
         @add temp, 'var', yes if options.reserve ? true
+        @laterVar temp if options.laterVar
         temp
 
 Ensure that an assignment is made at the top of this scope.
@@ -124,22 +125,36 @@ Add an explicit type for the variable declaration
       explicitType: (name, explicitType) ->
         v = @get name
         v?.explicitType = explicitType
+        delete v?.laterVar  # force top var declaration for type sake
 
 Get this variable's explicit type in this scope, if any
 
       getExplicitType: (name) ->
         @get(name)?.explicitType
 
+Check whether a var declaration of this variable could go later, and if so,
+mark it as so.
+
+      laterVar: (name) ->
+        # Ensure variable is declared at this scope, as a regular 'var', and
+        # we haven't already given it a var prefix somewhere, and it doesn't
+        # have an attachment that goes with a top var declaration.
+        v = @get name
+        later = v?.type is 'var' and
+                not (v.laterVar or v.comments? or v.explicitType?)
+        v.laterVar = yes if later
+        later
+
 Does this scope have any declared variables?
 
       hasDeclarations: ->
-        return true for v in @variables when v.type is 'var'
+        return true for v in @variables when v.type is 'var' and not v.laterVar
 
 Return a list of names of variables declared in this scope.
 Optionally restrict to assigned or unassigned variables.
 
       declaredVariables: (assigned) ->
-        (v.name for v in @variables when v.type is 'var' and
+        (v.name for v in @variables when v.type is 'var' and not v.laterVar and
           switch assigned
             when true then v.assigned?
             when false then not v.assigned?
