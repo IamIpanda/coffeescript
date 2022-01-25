@@ -966,3 +966,20 @@ test "#5368: continuing object and array literals", ->
   ]
     eq obj.a, 1
     eq obj.c, 2
+
+test '#5330: continuing implicit starting after comma', ->
+  a = [
+    b1: 1
+    b2: 2
+  , c1: 1
+    c2: 2
+  , d1: 1
+    d2: 2
+  ]
+  eq a.length, 3
+  eq a[0].b1, 1
+  eq a[0].b2, 2
+  eq a[1].c1, 1
+  eq a[1].c2, 2
+  eq a[2].d1, 1
+  eq a[2].d2, 2

@@ -245,7 +245,10 @@ exports.Rewriter = class Rewriter
         #
         #  1. We have seen a `CONTROL` argument on the line.
         #  2. The last token before the indent is part of the list below.
-        if prevTag not in ['=>', '->', '[', '(', ',', '{', 'ELSE', '=']
+        #  3. Continuing an implicit object starting after an array's comma.
+        if prevTag not in ['=>', '->', '[', '(', ',', '{', 'ELSE', '='] and
+           not (inImplicitObject() and stackTop2()?[0] == '[' and
+                tokens[stackTop()[1]-1]?[0] is ',')
           while inImplicitCall() or inImplicitObject() and prevTag isnt ':'
             if inImplicitCall()
               endImplicitCall()
@@ -347,9 +350,11 @@ exports.Rewriter = class Rewriter
         if stackTop()
           [stackTag, stackIdx] = stackTop()
           if (stackTag is '{' or
-              stackTag is 'INDENT' and stackTop2()?[0] is '{' and
-              not isImplicit(stackTop2()) and
-              @findTagsBackwards(stackIdx-1, ['{'])) and
+              stackTag is 'INDENT' and (top2 = stackTop2())?[0] is '{' and
+              (tokens[top2[1]][2] ? tokens[top2[1]].origin[2]).last_line ==
+              tokens[stackIdx-1]?[2].first_line and
+              (not isImplicit(top2) or startsLine and
+               tokens[top2[1]-1]?[0] == ',')) and
              (startsLine or @tag(s - 1) is ',' or @tag(s - 1) is '{') and
              @tag(s - 1) not in UNFINISHED
             return forward(1)
