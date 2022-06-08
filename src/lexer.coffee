@@ -761,7 +761,9 @@ exports.Lexer = class Lexer
   literalToken: ->
     if match = OPERATOR.exec @chunk
       [value] = match
-      @tagParameters() if CODE.test value
+      if CODE.test value
+        @tagParameters()
+        @tagParameterTypes()
     else
       value = @chunk.charAt 0
     tag  = value
@@ -865,6 +867,34 @@ exports.Lexer = class Lexer
     return this unless tok?[0] is 'DO'
     tok[0] = 'DO_IIFE'
     this
+
+  tagParameterTypes: ->
+    return if @prevTag() isnt 'PARAM_END'
+    changedTokens = []
+    stack = []
+    {tokens} = this
+    i = tokens.length
+    while tok = tokens[--i]
+      switch tok[0]
+        when '}'
+          stack.push tok
+        when '{'
+          stack.pop() if stack.length
+        when '='
+          continue if stack.length isnt 0
+          token[0] = 'PROPERTY' for token from changedTokens
+          changedTokens = []
+        when ','
+          changedTokens = []
+        when ':'
+          continue if stack.length isnt 0
+          token = tokens[--i]
+          token = tokens[--i] if token and token[0] is '?'
+          continue unless token and token[0] is 'PROPERTY'
+          token[0] = 'IDENTIFIER'
+          changedTokens.push token
+        when 'PARAM_START'
+          return
 
   # Close up all remaining open blocks at the end of the file.
   closeIndentation: ->

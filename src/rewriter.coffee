@@ -52,6 +52,7 @@ exports.Rewriter = class Rewriter
     @closeOpenIndexes()
     @normalizeLines()
     @tagPostfixConditionals()
+    @tagIdentityWithTypeFromProp()
     @addImplicitBracesAndParens()
     @rescueStowawayComments()
     @addLocationDataToGeneratedTokens()
@@ -354,13 +355,20 @@ exports.Rewriter = class Rewriter
           else i - 1
 
         startsLine = s <= 0 or @tag(s - 1) in LINEBREAKS or tokens[s - 1].newLine
-        # Are we just continuing an already declared object?
         if stackTop()
           [stackTag, stackIdx] = stackTop()
+          # Don't wrap (a: number) => 2 to ({a: number}) => 2
+          # But it's okay to use (a: {b: number} = b: 2)
+          return forward(1) if stackTag is 'PARAM_START' and @tag(s) in ['IDENTIFIER', ...EXPRESSION_START]
+            
+          # Are we just continuing an already declared object?
           if (stackTag is '{' or stackTag is 'INDENT' and @tag(stackIdx - 1) is '{') and
              (startsLine or @tag(s - 1) is ',' or @tag(s - 1) is '{') and
              @tag(s - 1) not in UNFINISHED
             return forward(1)
+      
+        # Don't wrap a: number = 4 to { a: number = 4 }
+        return forward(1) if @tag(s) is 'IDENTIFIER'
 
         preObjectToken = if i > 1 then tokens[i - 2] else []
         startImplicitObject(s, {startsLine: !!startsLine, continuationLineIndent: preObjectToken.continuationLineIndent})
@@ -654,6 +662,58 @@ exports.Rewriter = class Rewriter
             prevLocationData.range
       return 1
 
+  tagIdentityWithTypeFromProp: ->
+    @scanTokens (token, i, tokens) ->
+      prev = tokens[i - 1]
+      prev = tokens[i - 2] if prev and prev[0] == '?'
+      return 1 unless token[0] is ':' and prev and prev[0] is 'PROPERTY'
+      # Skip a type expression
+      level = 0
+      restTokens = 1
+      while true
+        i++
+        token = tokens[i]
+        return 1 unless token
+        [tag] = token
+        if restTokens > 0 and tag in EXPRESSION_START
+          level++
+        else if tag in EXPRESSION_END or tag == '>'
+          level--
+          # Inner an expression, reach its end.
+          # { a: number }
+          #             ↑
+          return 1 if level < 0
+          # The whole expression is a 'token'
+          # Array<number>
+          #             ↑
+          restTokens-- if level == 0
+        # Do nothing if in an expression.
+        else if level > 0
+        # Type expression operator, skip this token, and skip next one.
+        # number | string
+        #        ↑
+        else if tag in ['&', '|', '.', '::', '->', '=>', 'UNARY', 'EXTENDS']
+          restTokens = 1
+        # Normal top level token, skip it.
+        # number | string
+        # ↑        ↑
+        else if restTokens > 0
+          restTokens--
+        # Type expression starter, skip this token, and skip the whole next level as a token.
+        # Array<Number>
+        #      ↑
+        else if tag in ['[', '<']
+          restTokens++
+          level++
+        # Skip all terminator if it's in the end
+        # a:
+        #    b: number (TERMINATOR) ←
+        # = b: 4
+        else if tag == 'TERMINATOR'
+        else
+          prev[0] = 'IDENTIFIER' if tag == '='
+          return 1
+
   # Because our grammar is LALR(1), it can’t handle some single-line
   # expressions that lack ending delimiters. The **Rewriter** adds the implicit
   # blocks, so it doesn’t need to. To keep the grammar clean and tidy, trailing
@@ -830,7 +890,7 @@ IMPLICIT_FUNC    = ['IDENTIFIER', 'PROPERTY', 'SUPER', ')', 'CALL_END', ']', 'IN
 
 # Not an implicit call if the IMPLICIT_FUNC is preceded by one of these.
 exports.EXPLICIT_TYPE_ANNOTATIONS = EXPLICIT_TYPE_ANNOTATIONS =
-  ['~', 'EXPLICIT_TYPE']
+  [':', '~', 'EXPLICIT_TYPE']
 NOT_IMPLICIT_BEFORE = EXPLICIT_TYPE_ANNOTATIONS
 
 # These unary type operators should not be treated as implicit function calls

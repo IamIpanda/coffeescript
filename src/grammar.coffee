@@ -400,6 +400,7 @@ grammar =
 
   TypeSpecifier: [
     o '~'
+    o ':'
     o 'EXPLICIT_TYPE'
   ]
 
