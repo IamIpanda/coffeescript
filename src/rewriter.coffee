@@ -368,7 +368,7 @@ exports.Rewriter = class Rewriter
             return forward(1)
       
         # Don't wrap a: number = 4 to { a: number = 4 }
-        return forward(1) if @tag(s) is 'IDENTIFIER'
+        return forward(1) if @tag(s) in ['IDENTIFIER', 'PARAM_START']
 
         preObjectToken = if i > 1 then tokens[i - 2] else []
         startImplicitObject(s, {startsLine: !!startsLine, continuationLineIndent: preObjectToken.continuationLineIndent})

@@ -1372,7 +1372,7 @@ NUMBER     = ///
 OPERATOR   = /// ^ (
   ?: [-=]>             # function
    | [-+*/%<>&|^!?=]=  # compound assign / compare
-   | ~ | :=            # explicit typing (to trigger tagParameters)
+   | ~ | := | (?!::):  # explicit typing (to trigger tagParameters)
    | >>>=?             # zero-fill right shift
    | ([-+:])\1         # doubles
    | ([&|<>*/%])\2=?   # logic / shift / power / floor division / modulo
@@ -1385,7 +1385,7 @@ WHITESPACE = /^[^\n\S]+/
 COMMENT    = /^(\s*)###([^#][\s\S]*?)(?:###([^\n\S]*)|###$)|^((?:\s*#(?!##[^#]).*)+)/
 
 # What can come after arguments in a function definition
-CODE       = /^([-=]>|~|:=)/
+CODE       = /^([-=]>|~|:=|(?!::):)/
 
 MULTI_DENT = /^(?:\n[^\n\S]*)+/
 
